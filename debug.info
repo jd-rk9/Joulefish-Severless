@@ -1,0 +1,67 @@
+2026-05-31 20:55:24 [DEBUG]
+ Received request: POST to /v1/chat/completions with body  {
+  "model": "google/gemma-3-4b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an expert at simplifying complex political... <Truncated in logs> ... \"language\", \"styleApplied\", and \"simplifiedText\"."
+    },
+    {
+      "role": "user",
+      "content": "Der Bundesparteitag möge beschließen:\n\na\nVolt Deut... <Truncated in logs> ...m nächsten ordentlichen Bundesparteitag berichtet."
+    }
+  ],
+  "response_format": {
+    "type": "text"
+  },
+  "temperature": 0.2
+}
+2026-05-31 20:55:24  [INFO]
+ [google/gemma-3-4b] Running chat completion on conversation with 2 messages.
+2026-05-31 20:55:24 [DEBUG]
+ [cache_wrapper][INFO]: Trimmed 300 tokens from the prompt cache
+2026-05-31 20:55:24  [INFO]
+ [google/gemma-3-4b] Prompt processing progress: 0.0%
+2026-05-31 20:55:25  [INFO]
+ [google/gemma-3-4b] Prompt processing progress: 56.3%
+2026-05-31 20:55:26  [INFO]
+ [google/gemma-3-4b] Prompt processing progress: 99.9%
+2026-05-31 20:55:26  [INFO]
+ [google/gemma-3-4b] Prompt processing progress: 99.9%
+2026-05-31 20:55:37  [INFO]
+ [google/gemma-3-4b] Model generated tool calls:  []
+2026-05-31 20:55:37  [INFO]
+ [google/gemma-3-4b] Generated prediction:  {
+  "id": "chatcmpl-0zu3ji0ol8lavq6sf9qa4z",
+  "object": "chat.completion",
+  "created": 1780253724,
+  "model": "google/gemma-3-4b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "```json\n{\n  \"language\": \"German\",\n  \"styleApplied\": \"Einfache Sprache\",\n  \"simplifiedText\": [\n    \"Der Volt-Bundesparteitag wird beschließen: \",\n    \"\",\n    \"Volt Deutschland führt ein Amt für den Kampf gegen Antisemitismus ein.\",\n    \"\",\n    \"Der/Die Antisemitismusbeauftragte*r wird vom Bundesparteitag gewählt und arbeitet unabhängig. Er/Sie ist dem Bundesparteitag gegenüber rechenschaftspflichtig und legt diesem einmal jährlich einen Bericht vor.\",\n    \"\",\n    \"Der Bundesvorstand schlägt dem Bundesparteitag mindestens zwei Kandidierende für das Amt des/der Antisemitismusbeauftragten vor. Das Recht, sich selbst zu bewerben, bleibt für alle Mitglieder erhalten. Weitere Bewerbungen sind nach den Regeln der Wahlordnung möglich. Die Wahl erfolgt gemäß §19 der Wahlordnung von Volt Deutschland.\",\n    \"\",\n    \"Die Amtszeit ist zwei Jahre. Wiederwahl ist möglich. Das Amt wird nicht bezahlt.\",\n    \"\",\n    \"Das Ziel des Amtes ist es, antisemitische Vorfälle und Entwicklungen innerhalb von Volt Deutschland zu beobachten und die Verhinderung von Antisemitismus in der Partei zu stärken.\",\n    \"\",\n    \"Für Ausgaben, die für das Amt notwendig sind (z.B. Beauftragung externer Dienstleister), wird ein Budget von 50.000 € vorgesehen. Dies wird im Haushaltstitel für allgemeine politische Arbeit berücksichtigt und entsprechend erweitert.\",\n    \"\",\n    \"Das Amt wird erstmals auf dem nächsten Bundesparteitag gewählt.\",\n    \"\",\n    \"Aufgaben des/der Antisemitismusbeauftragten:\",\n    \"\",\n    \"Erstellung eines regelmäßigen Berichts über antisemitische Vorfälle und Entwicklungen in der Partei, der dem Bundesparteitag vorgelegt wird.\",\n    \"\",\n    \"Beratung von Vorständen, Teams und Mandatsträger*innen im Umgang mit antisemitischen Vorfällen.\",\n    \"\",\n    \"Unterstützung der Partei bei Sensibilisierung und Präventionsarbeit zum Thema Antisemitismus.\",\n    \"\",\n    \"Austausch mit externen Beratungsstellen und Expert*innen zum Thema Antisemitismus.\",\n    \"\",\n    \"Mitwirkung an der Entwicklung von Leitlinien und Handlungsempfehlungen für den Umgang mit antisemitischen Vorfällen in der Partei.\",\n    \"\",\n    \"Teilnahme und Mitwirkung an der Task-Force zur Umsetzung der Antisemitismusdefinition in Europa.\",\n    \"\",\n    \"Der/Die Antisemitismusbeauftragte*r übernimmt keine Aufgaben der parteiinternen Schiedsgerichtsbarkeit und trifft keine disziplinären Entscheidungen. Die Zuständigkeiten der Parteischiedsgerichte und anderer satzungsmäßiger Organe bleiben erhalten.\",\n    \"\",\n    \"Verpflichtende Fortbildungen:\",\n    \"\",\n    \"Der Bundesverband finanziert mindestens alle zwei Jahre eine Schulung zum Thema Antisemitismus für Mitglieder von Vorständen auf allen Ebenen sowie Mandatsträger*innen von Volt Deutschland.\",\n    \"\",\n    \"Die Mittel für diese Schulungen kommen aus dem Haushaltstitel für allgemeine politische Arbeit.\",\n    \"\",\n    \"Interessierte Mitglieder können auf Anfrage an diesen Schulungen teilnehmen. Der Bundesverband übernimmt die Kosten per Erstattungsantrag. Die Mittel kommen ebenfalls aus dem Haushaltstitel für allgemeine politische Arbeit.\",\n    \"\",\n    \"Dokumentation von Präzedenzfällen:\",\n    \"\",\n    \"Zur Stärkung der Handlungssicherheit wird ein interner, fortlaufend ergänzter Katalog von antisemitischen Vorfällen aus der Vergangenheit eingerichtet. Diese werden anonymisiert dokumentiert, kategorisiert und die Art und Weise beschrieben, wie die Partei mit diesen Fällen umgegangen ist.\",\n    \"\",\n    \"Ziel ist es, Mitgliedern, Vorständen und Mandatsträger*innen Orientierung zu geben, wiederkehrende Muster sichtbar zu machen und die Sensibilität für antisemitische Dynamiken in der Partei zu erhöhen.\",\n    \"\",\n    \"Der Bundesvorstand wird beauftragt, die notwendigen organisatorischen Schritte zur Umsetzung dieses Beschlusses einzuleiten. Der Stand der Umsetzung wird dem nächsten Bundesparteitag berichtet.\"\n  ]\n}\n```",
+        "reasoning_content": "",
+        "tool_calls": []
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1333,
+    "completion_tokens": 907,
+    "total_tokens": 2240,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    }
+  },
+  "stats": {},
+  "system_fingerprint": "google/gemma-3-4b"
+}
+
+
+This however came back in the webinterface as: 
+
+Der Volt-Bundesparteitag wird beschließen: ,,Volt Deutschland führt ein Amt für den Kampf gegen Antisemitismus ein.,,Der/Die Antisemitismusbeauftragte*r wird vom Bundesparteitag gewählt und arbeitet unabhängig. Er/Sie ist dem Bundesparteitag gegenüber rechenschaftspflichtig und legt diesem einmal jährlich einen Bericht vor.,,Der Bundesvorstand schlägt dem Bundesparteitag mindestens zwei Kandidierende für das Amt des/der Antisemitismusbeauftragten vor. Das Recht, sich selbst zu bewerben, bleibt für alle Mitglieder erhalten. Weitere Bewerbungen sind nach den Regeln der Wahlordnung möglich. Die Wahl erfolgt gemäß §19 der Wahlordnung von Volt Deutschland.,,Die Amtszeit ist zwei Jahre. Wiederwahl ist möglich. Das Amt wird nicht bezahlt.,,Das Ziel des Amtes ist es, antisemitische Vorfälle und Entwicklungen innerhalb von Volt Deutschland zu beobachten und die Verhinderung von Antisemitismus in der Partei zu stärken.,,Für Ausgaben, die für das Amt notwendig sind (z.B. Beauftragung externer Dienstleister), wird ein Budget von 50.000 € vorgesehen. Dies wird im Haushaltstitel für allgemeine politische Arbeit berücksichtigt und entsprechend erweitert.,,Das Amt wird erstmals auf dem nächsten Bundesparteitag gewählt.,,Aufgaben des/der Antisemitismusbeauftragten:,,Erstellung eines regelmäßigen Berichts über antisemitische Vorfälle und Entwicklungen in der Partei, der dem Bundesparteitag vorgelegt wird.,,Beratung von Vorständen, Teams und Mandatsträger*innen im Umgang mit antisemitischen Vorfällen.,,Unterstützung der Partei bei Sensibilisierung und Präventionsarbeit zum Thema Antisemitismus.,,Austausch mit externen Beratungsstellen und Expert*innen zum Thema Antisemitismus.,,Mitwirkung an der Entwicklung von Leitlinien und Handlungsempfehlungen für den Umgang mit antisemitischen Vorfällen in der Partei.,,Teilnahme und Mitwirkung an der Task-Force zur Umsetzung der Antisemitismusdefinition in Europa.,,Der/Die Antisemitismusbeauftragte*r übernimmt keine Aufgaben der parteiinternen Schiedsgerichtsbarkeit und trifft keine disziplinären Entscheidungen. Die Zuständigkeiten der Parteischiedsgerichte und anderer satzungsmäßiger Organe bleiben erhalten.,,Verpflichtende Fortbildungen:,,Der Bundesverband finanziert mindestens alle zwei Jahre eine Schulung zum Thema Antisemitismus für Mitglieder von Vorständen auf allen Ebenen sowie Mandatsträger*innen von Volt Deutschland.,,Die Mittel für diese Schulungen kommen aus dem Haushaltstitel für allgemeine politische Arbeit.,,Interessierte Mitglieder können auf Anfrage an diesen Schulungen teilnehmen. Der Bundesverband übernimmt die Kosten per Erstattungsantrag. Die Mittel kommen ebenfalls aus dem Haushaltstitel für allgemeine politische Arbeit.,,Dokumentation von Präzedenzfällen:,,Zur Stärkung der Handlungssicherheit wird ein interner, fortlaufend ergänzter Katalog von antisemitischen Vorfällen aus der Vergangenheit eingerichtet. Diese werden anonymisiert dokumentiert, kategorisiert und die Art und Weise beschrieben, wie die Partei mit diesen Fällen umgegangen ist.,,Ziel ist es, Mitgliedern, Vorständen und Mandatsträger*innen Orientierung zu geben, wiederkehrende Muster sichtbar zu machen und die Sensibilität für antisemitische Dynamiken in der Partei zu erhöhen.,,Der Bundesvorstand wird beauftragt, die notwendigen organisatorischen Schritte zur Umsetzung dieses Beschlusses einzuleiten. Der Stand der Umsetzung wird dem nächsten Bundesparteitag berichtet.

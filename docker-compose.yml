@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  gammamotion:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gammamotion-console:latest
+    container_name: gammamotion-console
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - LLM_API_PROVIDER=openai
+      - LLM_API_URL=http://host.docker.internal:1234/v1
+      - LLM_MODEL_NAME_OVERRIDE=google/gemma-3-4b

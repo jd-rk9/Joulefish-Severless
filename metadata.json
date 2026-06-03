@@ -1,0 +1,6 @@
+{
+  "name": "Political Motion Simplifier",
+  "description": "Exposes an API and a web interface to simplify complex political motions and amendments using Plain Language, Einfache Sprache, or A2/B1 simplification, strictly maintaining original intent and language.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
