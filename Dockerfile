@@ -27,8 +27,9 @@ COPY package*.json ./
 # Install only production dependencies
 RUN npm install --omit=dev
 
-# Copy the built assets from the builder stage
+# Copy the built assets and public folder from the builder stage
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/public ./public
 
 # Expose the port from docker-compose
 EXPOSE 3000

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="65 130 330 140" width="100%" height="100%">
+  <defs>
+    <!-- Core Brand Colors -->
+    <style>
+      .volt-purple { fill: #502379; opacity: 0.85; }
+      .volt-purple-dark { fill: #3A145B; }
+      .volt-yellow { fill: #FDC220; }
+      .volt-green { fill: #1BBE6F; }
+      .volt-blue { fill: #82D0F4; }
+      .volt-red { fill: #E63E12; }
+      
+      .volt-rotated-canvas {
+        transform: rotate(-21deg);
+        transform-origin: 250px 200px;
+      }
+    </style>
+  </defs>
+
+  <!-- Transparent Background Container aligned to the 21-degree angle -->
+  <g class="volt-rotated-canvas">
+    
+    <!-- TAIL FIN ASSEMBLY -->
+    <g id="tail-section" opacity="0.9">
+      <!-- Upper Tail Fluke -->
+      <path d="M 140,200 C 110,170 80,160 70,175 C 65,185 90,200 120,200 Z" class="volt-blue" />
+      <!-- Lower Tail Fluke -->
+      <path d="M 140,200 C 110,230 80,240 70,225 C 65,215 90,200 120,200 Z" class="volt-red" />
+    </g>
+
+    <!-- MAIN FISH BODY (Sleek, fluid architectural block) -->
+    <g id="body-section">
+      <!-- Main structural backdrop -->
+      <path d="M 120,200 C 160,140 260,130 310,200 C 260,270 160,260 120,200 Z" class="volt-purple" />
+      
+      <!-- Internal Geometric Overlays (Transparency & Accents) -->
+      <path d="M 160,175 C 190,145 240,145 260,170 Z" class="volt-purple-dark" opacity="0.5" />
+      <polygon points="180,165 220,165 200,195" class="volt-yellow" opacity="0.9" />
+      <polygon points="210,200 245,190 230,225" class="volt-green" opacity="0.9" />
+    </g>
+
+    <!-- HEAD & EYE -->
+    <g id="head-section">
+      <!-- Forward thrusting jaw block -->
+      <path d="M 305,195 C 320,195 335,200 335,200 C 335,200 320,205 305,205 Z" class="volt-purple-dark" />
+      <!-- Smart tech eye -->
+      <circle cx="280" cy="185" r="7" class="volt-blue" />
+      <circle cx="282" cy="183" r="2.5" fill="#ffffff" />
+    </g>
+
+    <!-- DATA EMISSION PIPELINE -->
+    <g id="data-stream" transform="translate(15, 0)">
+      <!-- Simplified clause blocks shooting forward -->
+      <rect x="335" y="180" width="25" height="8" rx="2" class="volt-blue" />
+      <rect x="365" y="172" width="16" height="16" rx="3" class="volt-blue" />
+      <path d="M 369,180 L 372,183 L 377,176" stroke="#502379" stroke-width="2" fill="none" stroke-linecap="round" />
+
+      <rect x="340" y="193" width="18" height="8" rx="2" class="volt-green" />
+      <rect x="363" y="193" width="22" height="8" rx="2" class="volt-yellow" />
+
+      <rect x="335" y="206" width="20" height="8" rx="2" class="volt-red" />
+      <rect x="360" y="206" width="16" height="16" rx="3" class="volt-red" />
+      <path d="M 364,214 L 367,217 L 372,210" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" />
+    </g>
+
+  </g>
+</svg>

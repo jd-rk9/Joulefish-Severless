@@ -1,0 +1,6 @@
+apiVersion: v2
+name: joulefish
+description: A Helm chart for deploying the Joulefish Plain Language Console on Kubernetes
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

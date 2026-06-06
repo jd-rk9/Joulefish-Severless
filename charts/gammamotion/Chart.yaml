@@ -1,6 +1,0 @@
-apiVersion: v2
-name: gammamotion
-description: A Helm chart for deploying the GammaMotion Material Plain Language Console on Kubernetes
-type: application
-version: 1.0.0
-appVersion: "1.0.0"

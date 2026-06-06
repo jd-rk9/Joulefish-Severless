@@ -1,12 +1,12 @@
 version: '3.8'
 
 services:
-  gammamotion:
+  joulefish:
     build:
       context: .
       dockerfile: Dockerfile
-    image: gammamotion-console:latest
-    container_name: gammamotion-console
+    image: joulefish-console:latest
+    container_name: joulefish-console
     ports:
       - "3000:3000"
     environment:

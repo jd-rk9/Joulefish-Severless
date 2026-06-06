@@ -36,41 +36,14 @@ interface ExampleItem {
   text: string;
 }
 
-const EXAMPLES: ExampleItem[] = [
-  {
-    id: "de",
-    title: "Klimaschutzgesetz (German)",
-    lang: "German",
-    label: "Requires 'Einfache Sprache'",
-    text: "Der Entwurf des Gesetzes zur Änderung des Klimaschutzgesetzes sieht in Paragraph 4 Absatz 1 vor, dass die im Sektor Energiewirtschaft zulässigen Jahrestransmissionsmengen für Kohlendioxidemissionen im Wege einer Rechtsverordnung der Bundesregierung ohne Zustimmung des Bundesrates unter Berücksichtigung der sektoralen Pfade bis zum Jahr 2030 kontinuierlich herabgesetzt werden, sofern nicht infolge unvorhergesehener geopolitischer Verwerfungen eine abweichende Bedarfsermittlung durch das Bundesministerium für Wirtschaft und Klimaschutz erfolgt."
-  },
-  {
-    id: "en",
-    title: "Agricultural Amendment (English)",
-    lang: "English",
-    label: "Requires 'Plain Language'",
-    text: "Be it enacted by the Senate and House of Representatives of the United States of America in Congress assembled, That, notwithstanding any other provision of law, the Secretary of Agriculture, in consultation with the Administrator of the Environmental Protection Agency, shall promulgate such rules as are necessary to implement the comprehensive nutrient management plans mandated under section 104 of the Federal Water Pollution Control Act, provided that such regulations do not conflict with existing state-level agricultural easements currently in force."
-  },
-  {
-    id: "nl",
-    title: "Mestactieplan (Dutch)",
-    lang: "Dutch",
-    label: "Requires 'CEFR A2/B1 level'",
-    text: "Het bestuursorgaan van de provincie kan ter uitvoering van het provinciaal mestactieplan, op basis van geografische bodemgesteldheidsgegevens en onder inachtneming van de nitraatrichtlijn (91/676/EEG), bij algemeen verbindend voorschrift drempelwaarden vaststellen voor het maximaal toelaatbare stikstofoverschot per hectare landbouwgrond, met dien verstande dat ontheffing kan worden verleend in situaties van bewezen overmacht door extreme meteorologische omstandigheden."
-  },
-  {
-    id: "it",
-    title: "Sviluppo Montano (Italian - Zero-Translation Demo)",
-    lang: "Italian",
-    label: "Requires 'CEFR A2/B1 level' in Italian",
-    text: "Al fine dello sviluppo economico del territorio montano, la Regione promuove e sostiene, d'intesa con gli enti locali territorialmente competenti e con il coinvolgimento delle associazioni di categoria maggiormente rappresentative, la creazione di distretti multifunzionali integrati mirati alla valorizzazione sostenibile delle risorse forestali, delle attività silvo-pastorali e delle filiere agroalimentari tradizionali di alta qualità."
-  }
-];
+// Initial placeholder, will be populated from API
+const EXAMPLES: ExampleItem[] = [];
 
 export default function App() {
   const [inputText, setInputText] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [availableModels, setAvailableModels] = useState<{id: string, name: string}[]>([]);
+  const [examples, setExamples] = useState<ExampleItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(1);
   const [apiResult, setApiResult] = useState<SimplifyResponse | null>(null);
@@ -81,12 +54,12 @@ export default function App() {
 
   // Dark Mode State
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    const saved = localStorage.getItem("gamma-darkmode");
+    const saved = localStorage.getItem("joulefish-darkmode");
     return saved !== null ? saved === "true" : false;
   });
 
   useEffect(() => {
-    localStorage.setItem("gamma-darkmode", String(isDarkMode));
+    localStorage.setItem("joulefish-darkmode", String(isDarkMode));
   }, [isDarkMode]);
 
   // Copy helper for dynamic code blocks
@@ -103,7 +76,7 @@ export default function App() {
   const [languageLockToggle, setLanguageLockToggle] = useState(true);
 
   // Get active web environment origin
-  const [originUrl, setOriginUrl] = useState("https://api.gamma-model.io");
+  const [originUrl, setOriginUrl] = useState("https://api.joulefish.io");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -122,6 +95,16 @@ export default function App() {
         }
       })
       .catch(err => console.error("Failed to load models:", err));
+  }, []);
+
+  // Fetch dynamic examples
+  useEffect(() => {
+    fetch("/api/examples")
+      .then(res => res.json())
+      .then(data => {
+        setExamples(data || []);
+      })
+      .catch(err => console.error("Failed to load examples:", err));
   }, []);
 
   // Simulate execution steps during API loading
@@ -252,12 +235,12 @@ export default function App() {
  * @return {string} The simplified plain language output.
  * @customfunction
  */
-function GAMMA_SIMPLIFY(text) {
+function JOULEFISH_SIMPLIFY(text) {
   if (!text) return "";
   var url = "${originUrl}/api/simplify";
   var payload = {
     text: text,
-    model: "gemini-3.5-flash"
+    model: "gemini-1.5-flash"
   };
   var options = {
     method: "post",
@@ -286,7 +269,7 @@ function GAMMA_SIMPLIFY(text) {
  */
 function onOpen() {
   DocumentApp.getUi()
-    .createMenu('GammaMotion')
+    .createMenu('Joulefish')
     .addItem('Simplify Selected Text', 'simplifySelection')
     .addToUi();
 }
@@ -375,18 +358,22 @@ function simplifySelection() {
       }`}>
         <div className="flex items-center gap-3">
           {/* Circular M3 style icon container */}
-          <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-sm hover:scale-105 active:scale-95 transition-all">
-            <Scale className="w-5 h-5" id="icon-scale" />
-          </div>
-          <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-2">
-            <h1 className="text-md md:text-lg font-bold tracking-tight">
-              Gamma<span className="text-indigo-600">Motion</span>
-            </h1>
-            <span className={`px-2 py-0.5 text-[9px] font-bold uppercase rounded-full tracking-wider self-start md:self-auto ${
-              isDarkMode ? "bg-[#2D3038] text-indigo-300" : "bg-indigo-50 text-indigo-700"
+          <div className="flex items-center gap-4">
+            <div className={`p-2 rounded-xl transition-colors duration-200 ${
+              isDarkMode ? "bg-indigo-600/20 text-indigo-400" : "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
             }`}>
-              Material Console
-            </span>
+              <img src="/joulefish-logo.svg" alt="Joulefish Logo" className="w-8 h-8" />
+            </div>
+            <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-2">
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
+                Joulefish
+              </h1>
+              <span className={`px-2 py-0.5 text-[9px] font-bold uppercase rounded-full tracking-wider self-start md:self-auto ${
+                isDarkMode ? "bg-[#2D3038] text-indigo-300" : "bg-indigo-50 text-indigo-700"
+              }`}>
+                Democratising language through AI 
+              </span>
+            </div>
           </div>
         </div>
 
@@ -550,8 +537,8 @@ function simplifySelection() {
                       preservationToggle ? "bg-indigo-600" : (isDarkMode ? "bg-slate-800" : "bg-slate-200")
                     }`}
                   >
-                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200 ${
-                      preservationToggle ? "translate-x-5" : "translate-x-1"
+                    <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-200 ${
+                      preservationToggle ? "translate-x-4" : "translate-x-0"
                     }`} />
                   </button>
                 </div>
@@ -572,8 +559,8 @@ function simplifySelection() {
                       languageLockToggle ? "bg-indigo-600" : (isDarkMode ? "bg-slate-800" : "bg-slate-200")
                     }`}
                   >
-                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200 ${
-                      languageLockToggle ? "translate-x-5" : "translate-x-1"
+                    <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-200 ${
+                      languageLockToggle ? "translate-x-4" : "translate-x-0"
                     }`} />
                   </button>
                 </div>
@@ -594,18 +581,18 @@ function simplifySelection() {
                   isDarkMode ? "bg-[#21232B] border-slate-800 text-slate-300" : "bg-white border-indigo-50 text-slate-600 shadow-sm"
                 }`}>
                   <strong className="text-indigo-600 dark:text-indigo-400 font-semibold block mb-0.5">🇩🇪 DE (German)</strong>
-                  Einfache Sprache Principles based on DIN 8581-1 or ISO 24495-1 specifications.
+                  Leichte Sprache Principles based on DIN SPEC 33429 or ISO 24495-1 specifications.
                 </div>
                 <div className={`p-3.5 rounded-2xl border text-xs leading-relaxed transition-colors duration-200 ${
                   isDarkMode ? "bg-[#21232B] border-slate-800 text-slate-300" : "bg-white border-indigo-50 text-slate-600 shadow-sm"
                 }`}>
                   <strong className="text-indigo-600 dark:text-indigo-400 font-semibold block mb-0.5">🇬🇧 EN (English)</strong>
-                  Standard civil Plain Language principles to keep output highly readable.
+                  Standard civil Easy read principles to keep output highly readable.
                 </div>
                 <div className={`p-3.5 rounded-2xl border text-xs leading-relaxed transition-colors duration-200 ${
                   isDarkMode ? "bg-[#21232B] border-slate-800 text-slate-300" : "bg-white border-indigo-50 text-slate-600 shadow-sm"
                 }`}>
-                  <strong className="text-indigo-600 dark:text-indigo-400 font-semibold block mb-0.5">🇪🇺 NL / Others</strong>
+                  <strong className="text-indigo-600 dark:text-indigo-400 font-semibold block mb-0.5">🇪🇺 Other</strong>
                   Simplify the regional document to CEFR A2/B1 proficiency levels.
                 </div>
               </div>
@@ -670,7 +657,7 @@ function simplifySelection() {
                         Quick Templates (Auto-loads translation scenarios)
                       </span>
                       <div className="flex flex-wrap gap-1.5">
-                        {EXAMPLES.map((ex) => (
+                        {examples.map((ex) => (
                           <button
                             key={ex.id}
                             onClick={() => loadExample(ex)}
@@ -694,7 +681,7 @@ function simplifySelection() {
                   <div className="flex items-center justify-between">
                     <h2 className="text-[11px] font-bold text-indigo-500 uppercase tracking-widest flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5" />
-                      Gamma Simplification
+                      Plain language generated below
                     </h2>
                   </div>
                   
