@@ -127,10 +127,9 @@ npm start
 ├── /package.json           # Declarations, builds, and dependencies
 └── /metadata.json          # Core application properties & permissions
 
+```
 
 ## Known issues
 
-* Hard to setup with cloud LLM's
-* Properly tested with local LLM's through LM Studio not Olama
-*
-```
+- Hard to setup with cloud LLM's
+- Properly tested with local LLM's through LM Studio not Olama
