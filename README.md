@@ -16,7 +16,7 @@ Joulefish is a tool that takes complex political texts and simplifies them into 
 
 ## 🚀 Key Features
 
-**German "Einfache Sprache" & A2/B1 Standardization**: Translates convoluted legislative amendments, draft policies, and legal frameworks into understandable clauses using direct structural rules.
+**German "Leichte Sprache" & A2/B1 Standardization**: Translates convoluted legislative amendments, draft policies, and legal frameworks into understandable clauses using direct structural rules.
 **Flexible Deploy-Time Routing**: Fully configurable to route calls either to cloud-based API endpoints (Gemini, OpenAI, Anthropic) or to locally hosted, privacy-first, OpenAI-compatible model servers (LM Studio, Ollama, vLLM, DeepSeek, etc.).
 **Stateless API Gateway**: Exposes standard endpoints to integrate plain-language simplifications directly into your existing internal workflows and automation pipelines.
 **Material Design 3 Console UI**: Styled in a responsive, high-contrast, beautiful dark slate and warm light-indigo interface inspired by Google Material 3 spacing, negative space, and typographic hierarchies.
@@ -126,4 +126,11 @@ npm start
 │   └── index.css           # Global typography definitions & Tailwind
 ├── /package.json           # Declarations, builds, and dependencies
 └── /metadata.json          # Core application properties & permissions
+
+
+## Known issues
+
+* Hard to setup with cloud LLM's
+* Properly tested with local LLM's through LM Studio not Olama
+*
 ```

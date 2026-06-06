@@ -2,32 +2,109 @@ import express from "express";
 import path from "path";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
+import fs from "fs/promises";
 
 // Load environment variables
 dotenv.config();
 
-const SYSTEM_PROMPT = `You are an expert at simplifying complex political motions and amendments. Your task is to create a concise, easy-to-understand summary of the provided text while strictly maintaining its original intent and meaning.
+const SYSTEM_PROMPT = `You simplify political texts. 
+STRICT RULE: YOU MUST STAY IN THE EXACT SAME LANGUAGE AS THE INPUT. DO NOT TRANSLATE.
 
-Follow these formatting and style guidelines:
-- Use simple, plain language and focus only on the key points.
-- Remove jargon, legalese, and unnecessary technical details.
-- CRITICAL STRUCTURE REQUIREMENT: Do not group the entire summary into one contiguous paragraph. Instead, organize the output so that every distinct legal or logical thought, provision, or point starts on a NEW LINE, and insert a strict EMPTY LINE (blank line) between each separate point. This creates a highly readable, spaced-out layout where each rule or conclusion stands independently.
+RULES:
+1. IDENTIFY input language and LOCK output to it. (NEVER TRANSLATE).
+2. USE simple words, active voice, and short sentences (one per line).
+3. NO genitive, no passive voice, no jargon, no metaphors.
+4. If Input is German: Follow Leichte Sprache per (DIN SPEC 33429).
+5. If Input is English: Follow Easy Read standards.
+6. If Input is Dutch: Follow Eenvoudig Communiceren.
+7. If Input is in any other language: Follow the rules for that language. When not avaible default to A2/B1 level of that language in the CEFR
+8. OUTPUT strictly valid JSON with keys: "language", "styleApplied", and "simplifiedText".`;
 
-CRITICAL LANGUAGE RULE (ZERO TOLERANCE FOR TRANSLATION):
-- You must draft the summary in the EXACT SAME language as the input text. 
-- NEVER translate. If the input is Italian, the output must be Italian. If the input is French, the output must be French. 
-- Changing the language of the text is a critical failure.
+// Simple language detection helper
+const detectLanguage = (text: string): string => {
+  const lower = text.toLowerCase();
+  const de = (lower.match(/\b(der|die|das|und|ist|nicht|von|für)\b/g) || []).length;
+  const en = (lower.match(/\b(the|and|is|not|this|with|for)\b/g) || []).length;
+  const nl = (lower.match(/\b(de|het|en|is|niet|van|voor)\b/g) || []).length;
+  
+  if (de > en && de > nl) return "German";
+  if (en > de && en > nl) return "English";
+  if (nl > de && nl > en) return "Dutch";
+  return "Detected Language";
+};
 
-Stylistic Simplification Rules:
-1. If the input text is in German: Apply "Einfache Sprache" style principles based on DIN 8581-1 or ISO 24495-1.
-2. If the input text is in English: Apply standard Plain Language principles.
-3. If the input text is in Dutch or ANY other language: Simplify the text strictly to an A2/B1 CEFR proficiency level *within that specific language*.
+// Helper to resiliently extract and clean fields from LLM response (JSON or raw string)
+const processModelResponse = (responseContent: string) => {
+  let parsedData: any = null;
+  const content = responseContent.trim();
+  
+  // Attempt 1: Standard JSON.parse
+  try {
+    const firstBrace = content.indexOf("{");
+    const lastBrace = content.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      const potentialJson = content.substring(firstBrace, lastBrace + 1);
+      parsedData = JSON.parse(potentialJson);
+    } else {
+      parsedData = JSON.parse(content);
+    }
+  } catch (e) {
+    // Attempt 2: Handle unescaped newlines in the string
+    try {
+      // Very aggressive: find anything that looks like "simplifiedText": "..." and escape internal newlines
+      // This is risky, so we better use Regex extraction as a fallback for specific fields.
+      console.warn("[Parsing] Standard JSON parse failed, using regex fallback.");
+    } catch (e2) {}
+  }
 
-Execution Steps (Follow internally before outputting):
-Step 1: Identify the language of the source text.
-Step 2: Apply the correct simplification style rule above.
-Step 3: Before rendering the final output, verify that the output language perfectly matches the source language identified in Step 1.
-Step 4: ALWAYS respond in JSON format with the following keys: "language", "styleApplied", and "simplifiedText".`;
+  let simplifiedText = responseContent;
+  let language = "Detected";
+  let styleApplied = "Plain language guidelines applied";
+
+  // If we have an object, extract fields
+  if (parsedData && typeof parsedData === "object") {
+    const findValue = (aliases: string[]) => {
+      const entry = Object.entries(parsedData).find(([key]) => 
+        aliases.includes(key.toLowerCase().replace(/[^a-z]/g, ""))
+      );
+      return entry ? entry[1] : null;
+    };
+
+    const t = findValue(["simplifiedtext", "summary", "text", "simplified", "output"]);
+    const l = findValue(["language", "lang", "detectedlanguage"]);
+    const s = findValue(["styleapplied", "style", "guidelines"]);
+
+    if (t) simplifiedText = Array.isArray(t) ? t.join("\n") : String(t);
+    if (l) language = String(l);
+    if (s) styleApplied = String(s);
+  } else {
+    // Attempt 3: Regex extraction if JSON parsing failed entirely
+    const extract = (aliases: string[]) => {
+      for (const alias of aliases) {
+        const regex = new RegExp(`"${alias}"\\s*:\\s*"([\\s\\S]*?)"(?=\\s*,|\\s*})`, "i");
+        const match = content.match(regex);
+        if (match) return match[1];
+      }
+      return null;
+    };
+
+    const t = extract(["simplifiedText", "summary", "text", "simplified", "output"]);
+    const l = extract(["language", "lang", "detectedLanguage"]);
+    const s = extract(["styleApplied", "style", "guidelines"]);
+
+    if (t) simplifiedText = t;
+    if (l) language = l;
+    if (s) styleApplied = s;
+  }
+
+  // Cleanup: if the extraction still looks like a JSON block, something is wrong
+  if (simplifiedText.trim().startsWith("{") && simplifiedText.includes("simplifiedText")) {
+    // Last ditch effort: if we still have the whole JSON, try to strip it manually
+    simplifiedText = simplifiedText.replace(/\{[\s\S]*?"simplifiedText"\s*:\s*"/i, "").replace(/"\s*,\s*"styleApplied"[\s\S]*?\}$/i, "").replace(/"\s*\}$/, "");
+  }
+
+  return { simplifiedText, language, styleApplied };
+};
 
 async function startServer() {
   const app = express();
@@ -64,14 +141,10 @@ async function startServer() {
       }
     }
     
-    // If no models fetched or fallback needed, provide Gemini + Override
-    if (models.length === 0) {
-      if (modelOverride) {
-        models.push({ id: modelOverride, name: `${modelOverride} (Local)` });
-      }
+    if (models.length === 0 && modelOverride) {
+      models.push({ id: modelOverride, name: `${modelOverride} (Local)` });
     }
 
-    // Always include standard options as fallback
     const defaults = [
       { id: "gemini-3.5-flash", name: "gemini-3.5-flash (Standard)" },
       { id: "gemini-3.1-flash-lite", name: "gemini-3.1-flash-lite (Responsive)" },
@@ -84,6 +157,62 @@ async function startServer() {
     });
     
     res.json(models);
+  });
+
+  // Endpoint to fetch dynamic examples from filesystem
+  app.get("/api/examples", async (req, res) => {
+    const examplesDir = path.join(process.cwd(), "public", "examples");
+    const examples: any[] = [];
+
+    console.log(`[Examples] Scanning directory: ${examplesDir}`);
+
+    try {
+      // Check if directory exists
+      try {
+        await fs.access(examplesDir);
+      } catch (e) {
+        console.warn(`[Examples] Directory does not exist: ${examplesDir}`);
+        return res.json([]);
+      }
+
+      const languages = await fs.readdir(examplesDir);
+      console.log(`[Examples] Found ${languages.length} entries in root examples dir`);
+      
+      for (const lang of languages) {
+        if (lang.startsWith(".")) continue; // Skip .DS_Store etc
+
+        const langPath = path.join(examplesDir, lang);
+        const stats = await fs.stat(langPath);
+        
+        if (stats.isDirectory()) {
+          const files = await fs.readdir(langPath);
+          console.log(`[Examples] Scanning ${lang}: found ${files.length} files`);
+
+          for (const file of files) {
+            if (file.endsWith(".txt")) {
+              const filePath = path.join(langPath, file);
+              const content = await fs.readFile(filePath, "utf-8");
+              
+              const lines = content.split("\n").filter(l => l.trim().length > 0);
+              const title = lines[0] ? lines[0].substring(0, 50).trim() : file.replace(".txt", "");
+              
+              examples.push({
+                id: `${lang}-${file}`,
+                title: title,
+                lang: lang.replace("_", " "),
+                label: `From ${lang} directory`,
+                text: content
+              });
+            }
+          }
+        }
+      }
+      console.log(`[Examples] Returning ${examples.length} total examples`);
+      res.json(examples);
+    } catch (err: any) {
+      console.error("[Examples] Error loading dynamic examples:", err.message);
+      res.json([]);
+    }
   });
 
   // API Route to simplify a political motion
@@ -103,31 +232,31 @@ async function startServer() {
       const customUrl = process.env.LLM_API_URL;
       const customKey = process.env.LLM_API_KEY || apiKey;
       
-      // User selection from UI takes priority, then env override, then default
       const modelOverride = model || process.env.LLM_MODEL_NAME_OVERRIDE || "gemini-3.5-flash";
 
-      // If configuration selects OpenAI-compatible or local endpoint routing
+      const detectedLang = detectLanguage(text);
+      const augmentedText = `[STRICT REQUIREMENT: Input text language is ${detectedLang}. Your response MUST be strictly in ${detectedLang}. DO NOT TRANSLATE TO GERMAN.]\n\nInput text: ${text}`;
+
+      // Case 1: Custom OpenAI-compatible
       if (apiProvider === "openai" || (customUrl && !customUrl.includes("googleapis.com"))) {
         let endpoint = customUrl || "http://localhost:11434/v1";
         if (!endpoint.endsWith("/chat/completions") && !endpoint.endsWith("/chat/completions/")) {
           endpoint = endpoint.replace(/\/$/, "") + "/chat/completions";
         }
 
-        console.log(`[Deploy Config] Routing LLM request to OpenAI-compatible custom endpoint: ${endpoint} (Model: ${modelOverride})`);
+        console.log(`[Deploy Config] Routing to Custom API: ${endpoint} (Model: ${modelOverride})`);
 
         const requestBody = {
           model: modelOverride,
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: text }
+            { role: "user", content: augmentedText }
           ],
           response_format: { type: "text" },
           temperature: 0.2
         };
 
-        const headers: Record<string, string> = {
-          "Content-Type": "application/json"
-        };
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
         if (customKey && customKey !== "MY_GEMINI_API_KEY") {
           headers["Authorization"] = `Bearer ${customKey}`;
         }
@@ -140,107 +269,50 @@ async function startServer() {
 
         if (!fetchResponse.ok) {
           const errText = await fetchResponse.text();
-          throw new Error(`Custom LLM endpoint returned status ${fetchResponse.status}: ${errText}`);
+          throw new Error(`Custom API returned status ${fetchResponse.status}: ${errText}`);
         }
 
         const json: any = await fetchResponse.json();
         const responseContent = json.choices?.[0]?.message?.content;
-        if (!responseContent) {
-          throw new Error("No content returned in choices from custom endpoint response structure.");
-        }
+        if (!responseContent) throw new Error("No content returned in choices.");
 
-        let parsedData: any = null;
-        try {
-          const content = responseContent.trim();
-          // Find first { and last }
-          const firstBrace = content.indexOf('{');
-          const lastBrace = content.lastIndexOf('}');
-          
-          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-            const potentialJson = content.substring(firstBrace, lastBrace + 1);
-            parsedData = JSON.parse(potentialJson);
-          } else {
-             // Try parsing the whole thing if no braces found (unlikely but possible)
-             parsedData = JSON.parse(content);
-          }
-        } catch (jsonErr) {
-          console.warn("Could not parse JSON structure from custom model response.", jsonErr);
-        }
-
-        // Resilient field extraction: look for simplifiedText, summary, text, etc. (case-insensitive)
-        let simplifiedText = responseContent;
-        let language = "Detected";
-        let styleApplied = "Plain language custom parsing";
-
-        if (parsedData && typeof parsedData === "object") {
-          const findValue = (aliases: string[]) => {
-            const entry = Object.entries(parsedData).find(([key]) => 
-              aliases.includes(key.toLowerCase().replace(/[^a-z]/g, ""))
-            );
-            return entry ? entry[1] : null;
-          };
-
-          const t = findValue(["simplifiedtext", "summary", "text", "simplified", "output"]);
-          const l = findValue(["language", "lang", "detectedlanguage"]);
-          const s = findValue(["styleapplied", "style", "guidelines"]);
-
-          if (t) {
-            if (Array.isArray(t)) {
-              simplifiedText = t.join("\n");
-            } else {
-              simplifiedText = String(t);
-            }
-          }
-          if (l) language = String(l);
-          if (s) styleApplied = String(s);
-        }
+        const processed = processModelResponse(responseContent);
 
         return res.json({
           originalText: text,
-          simplifiedText,
-          language,
-          styleApplied,
+          ...processed,
           modelUsed: modelOverride
         });
       }
 
+      // Case 2: Google Gemini
       if (!apiKey || apiKey === "MY_GEMINI_API_KEY") {
         return res.status(503).json({
           error: "API Key Missing",
-          message: "The Gemini API key is missing. Please add your GEMINI_API_KEY in the Secrets panel."
+          message: "The Gemini API key is missing. Please add your GEMINI_API_KEY."
         });
       }
 
-      // Initialize the GoogleGenAI client (lazy/safely inside handler, or re-use)
       const ai = new GoogleGenAI({
         apiKey: apiKey,
-        httpOptions: {
-          headers: {
-            "User-Agent": "aistudio-build",
-          }
-        }
+        httpOptions: { headers: { "User-Agent": "aistudio-build" } }
       });
 
-      // Default model is gemini-3.5-flash
       const selectedModel = model || "gemini-3.5-flash";
-
-      // Function to map theoretical/user-provided model names to actual active ones
       const resolveModelName = (name: string): string => {
         const lower = name.toLowerCase();
-        if (lower.includes("gemma")) {
-          return "gemma-2-9b-it";
-        }
+        if (lower.includes("gemma")) return "gemma-2-9b-it";
         return name;
       };
 
       const resolvedModel = resolveModelName(selectedModel);
-      console.log(`Resolving model option: '${selectedModel}' -> '${resolvedModel}'`);
+      console.log(`[Deploy Config] Routing to Gemini: ${resolvedModel}`);
 
       let response;
       try {
         response = await ai.models.generateContent({
           model: resolvedModel,
-          contents: text,
+          contents: augmentedText,
           config: {
             systemInstruction: SYSTEM_PROMPT,
             responseMimeType: "application/json",
@@ -256,17 +328,17 @@ async function startServer() {
           }
         });
       } catch (apiErr: any) {
-        console.warn(`Primary model request to '${resolvedModel}' failed. Retrying with production fallbacks. Error:`, apiErr.message || apiErr);
-        
-        // Define highly compatible fallback models to try sequentially
+        console.warn(`[Gemini] Request failed, trying fallback. Error:`, apiErr.message);
         const fallbackModels = ["gemini-1.5-flash"];
         let success = false;
-        
         for (const fallbackModel of fallbackModels) {
           try {
             response = await ai.models.generateContent({
               model: fallbackModel,
-              contents: text,
+              contents: {
+                role: "user",
+                parts: [{ text: augmentedText }]
+              },
               config: {
                 systemInstruction: SYSTEM_PROMPT,
                 responseMimeType: "application/json"
@@ -276,24 +348,17 @@ async function startServer() {
             break;
           } catch (innerErr) {}
         }
-        
-        if (!success) {
-          throw new Error(`All available LLM model backends returned an error.`);
-        }
+        if (!success) throw new Error(`All LLM model backends failed.`);
       }
 
       const responseText = response.text;
-      if (!responseText) {
-        throw new Error("Empty response received from the Gemini model.");
-      }
+      if (!responseText) throw new Error("Empty response from Gemini.");
 
-      const parsedData = JSON.parse(responseText.trim());
+      const processed = processModelResponse(responseText);
 
       return res.json({
         originalText: text,
-        simplifiedText: parsedData.simplifiedText,
-        language: parsedData.language,
-        styleApplied: parsedData.styleApplied,
+        ...processed,
         modelUsed: resolvedModel
       });
 
@@ -301,7 +366,7 @@ async function startServer() {
       console.error("Simplification error:", error);
       return res.status(500).json({
         error: "Simplification failed",
-        message: error.message || "An unexpected error occurred during simplification."
+        message: error.message || "An unexpected error occurred."
       });
     }
   });
