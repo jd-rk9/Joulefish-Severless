@@ -1,0 +1,12 @@
+@startuml
+participant "Motion tools" as MT
+participant "Joulefish" as JF
+participant "LLM" as LLM
+database "simple_summary" as SS
+
+MT -> JF: sends motiontext
+JF -> LLM: requests desired output
+LLM --> JF: simplified motion returns
+JF -> MT: verifies motion summary and sends it to motion tools
+MT -> SS: writes into new field
+@endumlpl
