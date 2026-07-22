@@ -1,0 +1,43 @@
+classDiagram
+    class SimplificationRequest {
+        +string text
+        +string style
+        +string model
+        +number maxSentenceLength
+    }
+
+    class SimplificationResponse {
+        +string originalText
+        +string simplifiedText
+        +string language
+        +string styleApplied
+        +string modelUsed
+    }
+
+    class AppSettings {
+        +string selectedModel
+        +string styleProfile
+        +number maxSentenceLength
+        +boolean highlightChanges
+    }
+
+    class EnvironmentConfig {
+        +string PORT
+        +string GEMINI_API_KEY
+        +string LLM_API_PROVIDER
+        +string LLM_API_URL
+        +string LLM_API_KEY
+        +string LLM_MODEL_NAME_OVERRIDE
+    }
+
+    class ExpressGateway {
+        +startServer()
+        +handleHealth(req, res)
+        +handleSimplify(req, res)
+        +routeToProvider(payload)
+    }
+
+    ExpressGateway ..> SimplificationRequest : receives
+    ExpressGateway ..> SimplificationResponse : outputs
+    ExpressGateway ..> EnvironmentConfig : reads
+    AppSettings -- SimplificationRequest : populates
