@@ -1,12 +1,10 @@
 classDiagram
-    class SimplificationRequest {
+    class SimplifyRequest {
         +string text
-        +string style
         +string model
-        +number maxSentenceLength
     }
 
-    class SimplificationResponse {
+    class SimplifyResponse {
         +string originalText
         +string simplifiedText
         +string language
@@ -16,9 +14,11 @@ classDiagram
 
     class AppSettings {
         +string selectedModel
-        +string styleProfile
-        +number maxSentenceLength
-        +boolean highlightChanges
+        +string inputText
+        +string outputText
+        +string detectedLang
+        +string styleApplied
+        +string activeTab
     }
 
     class EnvironmentConfig {
@@ -32,12 +32,13 @@ classDiagram
 
     class ExpressGateway {
         +startServer()
-        +handleHealth(req, res)
+        +getModels(req, res)
+        +getExamples(req, res)
         +handleSimplify(req, res)
-        +routeToProvider(payload)
+        +processModelResponse(responseContent)
     }
 
-    ExpressGateway ..> SimplificationRequest : receives
-    ExpressGateway ..> SimplificationResponse : outputs
+    ExpressGateway ..> SimplifyRequest : receives
+    ExpressGateway ..> SimplifyResponse : outputs
     ExpressGateway ..> EnvironmentConfig : reads
-    AppSettings -- SimplificationRequest : populates
+    AppSettings -- SimplifyRequest : populates

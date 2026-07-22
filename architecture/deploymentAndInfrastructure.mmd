@@ -4,8 +4,8 @@ graph TD
             Service["Service (Port 80 -> 3000)"]
         end
         
-        subgraph Pod["GammaMotion Pod / Container"]
-            NodeRuntime["Node.js 20 Runtime (dist/server.cjs)"]
+        subgraph Pod["Joulefish Pod / Container"]
+            NodeRuntime["Node.js 20 Runtime (server.ts / dist)"]
             
             subgraph Express_App["Single Port Container (3000)"]
                 StaticFiles["Static Vite Assets (dist/)"]
@@ -16,5 +16,5 @@ graph TD
 
     ClientBrowser["Client Web Browser"] --> Service
     Service --> Express_App
-    API_Routes --> LocalLLM["Local LLM Server (Ollama / vLLM)"]
+    API_Routes --> LocalLLM["Local LLM Server (LM Studio / Ollama / vLLM)"]
     API_Routes --> CloudLLM["Google Gemini Cloud API"]

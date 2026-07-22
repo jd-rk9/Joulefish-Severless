@@ -1,12 +1,13 @@
 @startuml
-participant "Motion tools" as MT
-participant "Joulefish" as JF
-participant "LLM" as LLM
-database "simple_summary" as SS
+participant "Motion Tools" as MT
+participant "Joulefish API" as JF
+participant "LLM Engine" as LLM
+database "Motion Database" as DB
 
-MT -> JF: sends motiontext
-JF -> LLM: requests desired output
-LLM --> JF: simplified motion returns
-JF -> MT: verifies motion summary and sends it to motion tools
-MT -> SS: writes into new field
-@endumlpl
+Note over MT: Input Field: motion_text
+MT -> JF: POST /api/simplify { "text": motion_text }
+JF -> LLM: Request simplification (Leichte Sprache / Plain Language)
+LLM --> JF: Return simplified JSON payload
+JF --> MT: 200 OK (SimplifyResponse)
+MT -> DB: Write simplifiedText to field "simplified_motion_text"
+@enduml

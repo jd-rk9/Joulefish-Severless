@@ -1,5 +1,6 @@
 #!/bin/bash
 
 for file in *.mmd; do
-  mmdc -i "$file" -o "${file%.mmd}.svg"
+  echo "Exporting $file..."
+  npx -y @mermaid-js/mermaid-cli -i "$file" -o "${file%.mmd}.svg"
 done
