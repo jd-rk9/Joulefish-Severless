@@ -1,0 +1,26 @@
+sequenceDiagram
+    autonumber
+    actor User as User / Client App
+    participant UI as React SPA (App.tsx)
+    participant Server as Express Server (server.ts)
+    participant Router as LLM Proxy Engine
+    participant Gemini as Google Gemini Cloud API
+    participant CustomLLM as Local / OpenAI LLM (LM Studio/Ollama)
+
+    User->>UI: Input political motion text & select model
+    UI->>Server: POST /api/simplify { text, model }
+    Server->>Server: Detect language (German, English, Dutch, etc.)
+    Server->>Server: Build prompt with Leichte Sprache / Easy Read rules
+    Server->>Router: Check LLM_API_PROVIDER config
+
+    alt Provider is Google Gemini ("gemini")
+        Router->>Gemini: ai.models.generateContent()
+        Gemini-->>Router: JSON { language, styleApplied, simplifiedText }
+    else Provider is Custom OpenAI ("openai")
+        Router->>CustomLLM: POST /v1/chat/completions
+        CustomLLM-->>Router: JSON choices payload
+    end
+
+    Router-->>Server: Extracted & parsed simplification fields
+    Server-->>UI: 200 OK (SimplifyResponse)
+    UI-->>User: Display original vs simplified text side-by-side

@@ -1,0 +1,13 @@
+@startuml
+participant "Motion Tools" as MT
+participant "Joulefish API" as JF
+participant "LLM Engine" as LLM
+database "Motion Database" as DB
+
+Note over MT: Input Field: motion_text
+MT -> JF: POST /api/simplify { "text": motion_text }
+JF -> LLM: Request simplification (Leichte Sprache / Plain Language)
+LLM --> JF: Return simplified JSON payload
+JF --> MT: 200 OK (SimplifyResponse)
+MT -> DB: Write simplifiedText to field "simplified_motion_text"
+@enduml

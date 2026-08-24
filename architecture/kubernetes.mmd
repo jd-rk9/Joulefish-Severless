@@ -1,0 +1,33 @@
+graph TD
+    subgraph K8s_Cluster["Kubernetes Cluster"]
+        
+        subgraph MotionTools_Deployment["Motion Tools Deployment & Storage"]
+            MT_Pod["Motion Tools Pod"]
+            MT_App["Motion Tools App / Worker"]
+            MT_DB[("Motion Tools Database<br/>field: simplified_motion_text")]
+            MT_Pod --- MT_App
+        end
+
+        subgraph Joulefish_Deployment["Joulefish Deployment & Service"]
+            JF_Service["Joulefish Service<br/>(ClusterIP / Port 3000)"]
+            
+            subgraph JF_Pod["Joulefish Pod"]
+                Node_Runtime["Node.js 20 Runtime"]
+                Express_App["Express API Server<br/>(server.ts)"]
+                Node_Runtime --- Express_App
+            end
+            
+            JF_Service -->|"Routes traffic to port 3000"| Express_App
+        end
+
+    end
+
+    subgraph External_Cloud["External Cloud Providers"]
+        Gemini_Model["Google Gemini Model<br/>(generativelanguage.googleapis.com)"]
+    end
+
+    MT_App -->|"1. HTTP POST /api/simplify { text: motion_text }<br/>Internal K8s DNS (http://joulefish:3000)"| JF_Service
+    Express_App -->|"2. Outbound HTTPS API Call<br/>via @google/genai SDK"| Gemini_Model
+    Gemini_Model -.->|"3. Returns generated JSON response"| Express_App
+    Express_App -.->|"4. Returns 200 OK SimplifyResponse"| MT_App
+    MT_App -->|"5. Writes simplifiedText to database field"| MT_DB

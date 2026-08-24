@@ -1,0 +1,13 @@
+sequenceDiagram
+    autonumber
+    participant MT as Motion Tools System
+    participant JF as Joulefish Gateway (/api/simplify)
+    participant LLM as LLM Engine (Gemini / Custom Provider)
+    participant DB as Motion Database
+
+    Note over MT: Input Field: motion_text
+    MT->>JF: POST /api/simplify { "text": motion_text }
+    JF->>LLM: Request simplification rules (Leichte Sprache / Easy Read)
+    LLM-->>JF: JSON payload { simplifiedText, language, styleApplied }
+    JF-->>MT: 200 OK (SimplifyResponse)
+    MT->>DB: Write simplifiedText into field "simplified_motion_text"

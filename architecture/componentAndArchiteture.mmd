@@ -1,0 +1,19 @@
+C4Context
+    title Component & Architecture Diagram - Joulefish
+
+    Person(user, "User / Civil Servant", "Inputs text to be simplified into German 'Leichte Sprache' or Easy Read")
+    
+    Container_Boundary(app_container, "Joulefish Container (Docker / K8s)") {
+        Component(react_ui, "React 19 Frontend SPA", "React, Vite, Tailwind CSS", "Provides workspace, API builder, Google Workspace integration tab, and diff views")
+        Component(express_server, "Express Backend Gateway", "Node.js (server.ts)", "Handles API routing (/api/simplify, /api/models, /api/examples), static file serving, and CORS")
+        Component(llm_router, "LLM Proxy / Router", "TypeScript", "Checks provider configuration and builds appropriate payload for Gemini SDK or OpenAI REST API")
+    }
+
+    System_Ext(gemini_api, "Google Gemini API", "Cloud API via @google/genai SDK")
+    System_Ext(custom_llm, "Local / Custom LLM Endpoint", "Ollama, LM Studio, vLLM, DeepSeek (OpenAI compatible)")
+
+    Rel(user, react_ui, "Interacts with UI / Submits text", "HTTPS / Port 3000")
+    Rel(react_ui, express_server, "POST /api/simplify", "JSON / REST")
+    Rel(express_server, llm_router, "Delegates LLM request", "In-Process")
+    Rel(llm_router, gemini_api, "Generates response via SDK", "HTTPS (gemini provider)")
+    Rel(llm_router, custom_llm, "POST /v1/chat/completions", "HTTP/HTTPS (openai provider)")
