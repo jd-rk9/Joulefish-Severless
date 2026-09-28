@@ -7,18 +7,135 @@ import fs from "fs/promises";
 // Load environment variables
 dotenv.config();
 
-const SYSTEM_PROMPT = `You simplify political texts. 
+const buildSystemPrompt = (mode: string = "plain"): string => {
+  const isEasy = mode === "easy" || mode === "A2 / Simple" || mode === "a2";
+
+  if (isEasy) {
+    return `You simplify political and civic texts into Leichte Sprache / Easy Read (CEFR A1–A2 level).
 STRICT RULE: YOU MUST STAY IN THE EXACT SAME LANGUAGE AS THE INPUT. DO NOT TRANSLATE.
 
-RULES:
+RULES FOR LEICHTE SPRACHE / EASY READ:
 1. IDENTIFY input language and LOCK output to it. (NEVER TRANSLATE).
-2. USE simple words, active voice, and short sentences (one per line).
-3. NO genitive, no passive voice, no jargon, no metaphors.
-4. If Input is German: Follow Leichte Sprache per (DIN SPEC 33429).
-5. If Input is English: Follow Easy Read standards.
-6. If Input is Dutch: Follow Eenvoudig Communiceren.
-7. If Input is in any other language: Follow the rules for that language. When not avaible default to A2/B1 level of that language in the CEFR
-8. OUTPUT strictly valid JSON with keys: "language", "styleApplied", and "simplifiedText".`;
+2. TARGET AUDIENCE: People with learning difficulties or significant reading impairments (CEFR A1/A2).
+3. SENTENCE LENGTH & STRUCTURE:
+   - Very short sentences (maximum 8–12 words per sentence).
+   - Exactly ONE sentence per line.
+   - Strictly ONE thought or statement per sentence.
+4. GRAMMAR RESTRICTIONS:
+   - NO genitive (in German: replace genitive with "von", e.g. "vom Rat" instead of "des Rates").
+   - NO passive voice (use active verbs and direct actions).
+   - NO subjunctive/Konjunktiv, no convoluted subordinate clauses, no relative clauses.
+5. VOCABULARY & STYLE:
+   - Use simple, everyday vocabulary.
+   - NO jargon, legalisms, or metaphors. Explain difficult terms simply.
+   - In German: hyphenate long compound words if helpful (e.g., "Nacht-Zeiten", "Licht-Verschmutzung").
+   - Use clear, explicit questions or section headers (e.g., "Worum geht es?", "Was soll getan werden?", "Warum machen wir das?").
+6. STANDARDS BY LANGUAGE:
+   - If Input is German: Strictly follow Leichte Sprache per DIN SPEC 33429:2025-03.
+   - If Input is English: Strictly follow Easy Read standards (A1/A2).
+   - If Input is Dutch: Strictly follow Makkelijk Lezen / Eenvoudige Taal (A1/A2).
+   - Other languages: Follow CEFR A1/A2 simple reading guidelines.
+7. OUTPUT strictly valid JSON with keys: "language", "styleApplied", and "simplifiedText".
+In "styleApplied", indicate: "Leichte Sprache (DIN SPEC 33429:2025-03)".`;
+  }
+
+  // Default: Plain Language / Einfache Sprache (B1)
+  return `You simplify political and civic texts into Plain Language / Einfache Sprache (CEFR B1 level).
+STRICT RULE: YOU MUST STAY IN THE EXACT SAME LANGUAGE AS THE INPUT. DO NOT TRANSLATE.
+
+RULES FOR EINFACHE SPRACHE / PLAIN LANGUAGE:
+1. IDENTIFY input language and LOCK output to it. (NEVER TRANSLATE).
+2. TARGET AUDIENCE: Broad general public, citizens, and voters (CEFR B1 level).
+3. FORMAT & STRUCTURE:
+   - Write natural, fluid paragraphs with a clear, logical structure.
+   - Use meaningful headings and structured bulleted lists for key action items or demands.
+   - DO NOT force one sentence per line. Sentences should flow naturally in standard paragraphs.
+4. GRAMMAR & SYNTAX:
+   - Clear, active, and accessible sentence construction.
+   - Natural grammar is encouraged: genitives and natural compound sentences ARE permitted when easy to read.
+   - Avoid bureaucratic legalese, officialese (Beamtendeutsch), and nested clauses (Schachtelsätze).
+5. TONE:
+   - Maintain an adult, dignified, and professional civic tone.
+   - DO NOT infantilize the reader (avoid child-like phrases such as "Es gibt drei Punkte", "Punkt eins:", "Warum machen wir das?").
+6. STANDARDS BY LANGUAGE:
+   - If Input is German: Strictly follow Einfache Sprache per DIN 8581-1:2024-05.
+   A proper deutsche einfache sprachen example: "Neue Regeln für die Beleuchtung in Münster
+
+   Die Stadt Münster möchte die Beleuchtung auf Straßen und Wegen verbessern.
+    
+   Die Menschen sollen sich dort auch nachts sicher fühlen.
+    
+   Gleichzeitig möchte die Stadt Tiere und Pflanzen schützen.
+    
+   Was möchte die Stadt erreichen?
+    
+    Die Stadt möchte:
+    
+    dunkle Straßen und Wege besser beleuchten,
+    Orte sicherer machen, an denen Menschen Angst haben,
+    Tiere und Pflanzen vor zu viel Licht schützen,
+    Strom sparen.
+    Was soll die Stadt tun?
+    
+    Die Stadt soll prüfen:
+    
+    Wo ist es nachts zu dunkel?
+    
+    Wo fühlen sich Menschen unsicher?
+    
+    Danach soll die Stadt prüfen, wo eine bessere Beleuchtung nötig ist.
+    
+    An vielen Orten soll moderne Technik eingesetzt werden.
+    
+    Die Lampen können dann automatisch heller oder dunkler werden.
+    
+    Zum Beispiel:
+    
+    Wenn Menschen unterwegs sind, kann das Licht heller werden.
+    
+    Wenn niemand unterwegs ist, kann das Licht dunkler werden.
+    
+    In neuen Wohngebieten sollen Lampen eingebaut werden, die man heller oder dunkler stellen kann.
+    
+    Die Stadt soll auch prüfen, ob sie dafür Geld aus Förderprogrammen bekommen kann.
+    
+    Förderprogramme sind finanzielle Hilfen zum Beispiel vom Land, vom Bund oder von der Europäischen Union.
+    
+    Wie können die Menschen in Münster mitmachen?
+    
+    Auch die Menschen in Münster sollen ihre Meinung sagen können.
+    
+    Dafür soll es einfache digitale Möglichkeiten geben.
+    
+    Zum Beispiel eine Umfrage mit dem Handy.
+    
+    Die Menschen können der Stadt zum Beispiel sagen:
+    
+    Hier ist es zu dunkel.
+    Hier fühle ich mich unsicher.
+    Wie geht es danach weiter?
+    
+    Die Stadt sammelt die Hinweise.
+    
+    Dann prüft die Stadt die Ergebnisse.
+    
+    Danach schreibt die Verwaltung einen Bericht für den Stadtrat.
+    
+    In dem Bericht steht:
+    
+    Wo gibt es Probleme?
+    Was kann verbessert werden?
+    Was soll die Stadt als Nächstes tun?
+    
+    Danach entscheidet der Stadtrat über die weiteren Schritte." 
+   
+
+   - If Input is English: Strictly follow Plain Language per ISO 24495-1 (B1).
+   - If Input is Dutch: Strictly follow Duidelijke Taal / Eenvoudig Communiceren (B1).
+   - Other languages: Follow CEFR B1 Plain Language guidelines.
+7. OUTPUT strictly valid JSON with keys: "language", "styleApplied", and "simplifiedText".
+In "styleApplied", indicate: "Einfache Sprache (DIN ISO 24495-1 / DIN 8581-1)".`;
+};
 
 // Simple language detection helper
 const detectLanguage = (text: string): string => {
@@ -218,7 +335,7 @@ async function startServer() {
   // API Route to simplify a political motion
   app.post("/api/simplify", async (req, res) => {
     try {
-      const { text, model } = req.body;
+      const { text, model, mode } = req.body;
 
       if (!text || typeof text !== "string" || text.trim() === "") {
         return res.status(400).json({
@@ -226,6 +343,9 @@ async function startServer() {
           message: "Please enter a non-empty text to simplify."
         });
       }
+
+      const isEasyMode = mode === "easy" || mode === "A2 / Simple" || mode === "a2";
+      const systemPrompt = buildSystemPrompt(mode);
 
       const apiKey = process.env.GEMINI_API_KEY;
       const apiProvider = (process.env.LLM_API_PROVIDER || "gemini").toLowerCase();
@@ -235,7 +355,11 @@ async function startServer() {
       const modelOverride = model || process.env.LLM_MODEL_NAME_OVERRIDE || "gemini-3.5-flash";
 
       const detectedLang = detectLanguage(text);
-      const augmentedText = `[STRICT REQUIREMENT: Input text language is ${detectedLang}. Your response MUST be strictly in ${detectedLang}. DO NOT TRANSLATE TO GERMAN.]\n\nInput text: ${text}`;
+      const targetStandard = detectedLang === "German"
+        ? (isEasyMode ? "Leichte Sprache (DIN SPEC 33429:2025-03)" : "Einfache Sprache (DIN ISO 24495-1 / DIN 8581-1)")
+        : (isEasyMode ? "Easy Read (CEFR A2)" : "Plain Language (CEFR B1)");
+
+      const augmentedText = `[STRICT REQUIREMENT: Input text language is ${detectedLang}. Output MUST be strictly in ${detectedLang}. DO NOT TRANSLATE. Apply ${targetStandard}.]\n\nInput text:\n${text}`;
 
       // Case 1: Custom OpenAI-compatible
       if (apiProvider === "openai" || (customUrl && !customUrl.includes("googleapis.com"))) {
@@ -244,12 +368,12 @@ async function startServer() {
           endpoint = endpoint.replace(/\/$/, "") + "/chat/completions";
         }
 
-        console.log(`[Deploy Config] Routing to Custom API: ${endpoint} (Model: ${modelOverride})`);
+        console.log(`[Deploy Config] Routing to Custom API: ${endpoint} (Model: ${modelOverride}, Mode: ${isEasyMode ? "easy (Leichte Sprache)" : "plain (Einfache Sprache)"})`);
 
         const requestBody = {
           model: modelOverride,
           messages: [
-            { role: "system", content: SYSTEM_PROMPT },
+            { role: "system", content: systemPrompt },
             { role: "user", content: augmentedText }
           ],
           response_format: { type: "text" },
@@ -281,7 +405,8 @@ async function startServer() {
         return res.json({
           originalText: text,
           ...processed,
-          modelUsed: modelOverride
+          modelUsed: modelOverride,
+          modeUsed: isEasyMode ? "easy" : "plain"
         });
       }
 
@@ -306,7 +431,7 @@ async function startServer() {
       };
 
       const resolvedModel = resolveModelName(selectedModel);
-      console.log(`[Deploy Config] Routing to Gemini: ${resolvedModel}`);
+      console.log(`[Deploy Config] Routing to Gemini: ${resolvedModel} (Mode: ${isEasyMode ? "easy (Leichte Sprache)" : "plain (Einfache Sprache)"})`);
 
       let response;
       try {
@@ -314,7 +439,7 @@ async function startServer() {
           model: resolvedModel,
           contents: augmentedText,
           config: {
-            systemInstruction: SYSTEM_PROMPT,
+            systemInstruction: systemPrompt,
             responseMimeType: "application/json",
             responseSchema: {
               type: Type.OBJECT,
@@ -340,7 +465,7 @@ async function startServer() {
                 parts: [{ text: augmentedText }]
               },
               config: {
-                systemInstruction: SYSTEM_PROMPT,
+                systemInstruction: systemPrompt,
                 responseMimeType: "application/json"
               }
             });
@@ -359,7 +484,8 @@ async function startServer() {
       return res.json({
         originalText: text,
         ...processed,
-        modelUsed: resolvedModel
+        modelUsed: resolvedModel,
+        modeUsed: isEasyMode ? "easy" : "plain"
       });
 
     } catch (error: any) {
