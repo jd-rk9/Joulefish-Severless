@@ -186,7 +186,8 @@ export default function App() {
         },
         body: JSON.stringify({
           text: inputText,
-          model: selectedModel
+          model: selectedModel,
+          mode: ceilingText === "B1 / Plain" ? "plain" : "easy"
         })
       });
 
@@ -507,7 +508,7 @@ function simplifySelection() {
                 <div className={`p-3 rounded-2xl border transition-colors ${
                   isDarkMode ? "bg-[#21232B] border-slate-800" : "bg-white border-indigo-50 shadow-sm"
                 }`}>
-                  <div className="flex justify-between mb-1.5">
+                  <div className="flex justify-between mb-1.5 items-center">
                     <span className={`text-xs font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>Complexity Ceiling</span>
                     <span className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider bg-indigo-50/80 dark:bg-indigo-950/40 px-2 py-0.5 rounded-full border border-indigo-100/40 dark:border-indigo-900/30">
                       {ceilingText}
@@ -518,7 +519,11 @@ function simplifySelection() {
                   }`} onClick={() => setCeilingText(prev => prev === "B1 / Plain" ? "A2 / Simple" : "B1 / Plain")}>
                     <div className={`h-full bg-indigo-600 rounded-full transition-all duration-300 ${ceilingText === "B1 / Plain" ? "w-2/3" : "w-1/3"}`}></div>
                   </div>
-                  <span className="text-[10px] text-slate-400 mt-1.5 block">Tap track to set depth targets.</span>
+                  <span className="text-[10px] text-slate-400 mt-1.5 block leading-tight">
+                    {ceilingText === "B1 / Plain" 
+                      ? "B1: Einfache Sprache (DIN ISO 24495-1 & DIN 8581-1)" 
+                      : "A2: Leichte Sprache (DIN SPEC 33429:2025-03)"}
+                  </span>
                 </div>
 
                 {/* Parameter 2 */}
@@ -580,20 +585,25 @@ function simplifySelection() {
                 <div className={`p-3.5 rounded-2xl border text-xs leading-relaxed transition-colors duration-200 ${
                   isDarkMode ? "bg-[#21232B] border-slate-800 text-slate-300" : "bg-white border-indigo-50 text-slate-600 shadow-sm"
                 }`}>
-                  <strong className="text-indigo-600 dark:text-indigo-400 font-semibold block mb-0.5">🇩🇪 DE (German)</strong>
-                  Leichte Sprache Principles based on DIN SPEC 33429 or ISO 24495-1 specifications.
+                  <strong className="text-indigo-600 dark:text-indigo-400 font-semibold block mb-1">🇩🇪 DE (German)</strong>
+                  <span className="block text-[11px] text-slate-500 dark:text-slate-400 mb-0.5">
+                    • <strong>Einfache Sprache:</strong> DIN ISO 24495-1 &amp; DIN 8581-1 (Plain language / B1 for general public)
+                  </span>
+                  <span className="block text-[11px] text-slate-500 dark:text-slate-400">
+                    • <strong>Leichte Sprache:</strong> DIN SPEC 33429 (Easy read / A2 accessible rules)
+                  </span>
                 </div>
                 <div className={`p-3.5 rounded-2xl border text-xs leading-relaxed transition-colors duration-200 ${
                   isDarkMode ? "bg-[#21232B] border-slate-800 text-slate-300" : "bg-white border-indigo-50 text-slate-600 shadow-sm"
                 }`}>
                   <strong className="text-indigo-600 dark:text-indigo-400 font-semibold block mb-0.5">🇬🇧 EN (English)</strong>
-                  Standard civil Easy read principles to keep output highly readable.
+                  Plain Language (ISO 24495-1) and Easy Read civil accessibility standards.
                 </div>
                 <div className={`p-3.5 rounded-2xl border text-xs leading-relaxed transition-colors duration-200 ${
                   isDarkMode ? "bg-[#21232B] border-slate-800 text-slate-300" : "bg-white border-indigo-50 text-slate-600 shadow-sm"
                 }`}>
-                  <strong className="text-indigo-600 dark:text-indigo-400 font-semibold block mb-0.5">🇪🇺 Other</strong>
-                  Simplify the regional document to CEFR A2/B1 proficiency levels.
+                  <strong className="text-indigo-600 dark:text-indigo-400 font-semibold block mb-0.5">🇳🇱 NL (Dutch)</strong>
+                  Duidelijke Taal / B1 Eenvoudig Communiceren &amp; Makkelijk Lezen.
                 </div>
               </div>
             </div>
