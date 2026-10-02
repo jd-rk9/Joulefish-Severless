@@ -1,9 +1,19 @@
 {
   "functions": {
     "cors": {
-      "allowOrigin": "https://joulefish.sites.deploybase.eu",
-      "allowMethods": ["POST", "OPTIONS"],
-      "allowHeaders": ["Content-Type", "Authorization", "Accept"],
+      "origins": [
+        "https://joulefish.sites.deploybase.eu"
+      ],
+      "methods": [
+        "POST",
+        "OPTIONS"
+      ],
+      "headers": [
+        "Content-Type",
+        "Authorization",
+        "Accept",
+        "X-Requested-With"
+      ],
       "allowCredentials": true
     }
   }
