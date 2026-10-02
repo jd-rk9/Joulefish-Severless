@@ -1,5 +1,4 @@
 // functions/simplify.ts
-import { GoogleGenAI, Type } from "@google/genai";
 
 const corsHeaders = {
   "content-type": "application/json",
@@ -81,7 +80,7 @@ export default async function handler(request) {
     const apiProvider = (process.env.LLM_API_PROVIDER ?? "gemini").toString().toLowerCase();
     const customUrl = process.env.LLM_API_URL;
     const apiKey = process.env.LLM_API_KEY || process.env.GEMINI_API_KEY;
-    const selectedModel = model || process.env.LLM_MODEL_NAME_OVERRIDE || "gemma-4-26b-a4b-it";
+    const selectedModel = model || process.env.LLM_MODEL_NAME_OVERRIDE || "gemini-2.5-flash";
 
     const isEasyMode = mode === "easy" || mode === "A2 / Simple" || mode === "a2";
     const systemPrompt = buildSystemPrompt(mode);
@@ -155,7 +154,7 @@ export default async function handler(request) {
       );
     }
 
-    // Path 2: Direct Gemini API
+    // Path 2: Direct Gemini REST API (No heavy SDK dependencies)
     if (!apiKey) {
       return new Response(
         JSON.stringify({ error: "API Key Missing", message: "No LLM_API_KEY or GEMINI_API_KEY provided." }),
@@ -163,28 +162,45 @@ export default async function handler(request) {
       );
     }
 
-    const ai = new GoogleGenAI({ apiKey });
-    const response = await ai.models.generateContent({
-      model: selectedModel,
-      contents: augmentedText,
-      config: {
-        systemInstruction: systemPrompt,
+    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
+
+    const geminiPayload = {
+      system_instruction: {
+        parts: [{ text: systemPrompt }]
+      },
+      contents: [
+        {
+          parts: [{ text: augmentedText }]
+        }
+      ],
+      generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
-          type: Type.OBJECT,
+          type: "OBJECT",
           properties: {
-            language: { type: Type.STRING },
-            styleApplied: { type: Type.STRING },
-            simplifiedText: { type: Type.STRING }
+            language: { type: "STRING" },
+            styleApplied: { type: "STRING" },
+            simplifiedText: { type: "STRING" }
           },
           required: ["language", "styleApplied", "simplifiedText"]
         }
       }
+    };
+
+    const fetchResponse = await fetch(geminiEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(geminiPayload)
     });
 
-    // Safely retrieve string from response.text() function
-    const rawText = typeof response.text === "function" ? response.text() : response.text;
-    let cleaned = (rawText || "").trim();
+    if (!fetchResponse.ok) {
+      const errText = await fetchResponse.text();
+      throw new Error(`Gemini API returned status ${fetchResponse.status}: ${errText}`);
+    }
+
+    const geminiJson = await fetchResponse.json();
+    const rawText = geminiJson.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    let cleaned = rawText.trim();
 
     if (cleaned.startsWith("```json")) {
       cleaned = cleaned.replace(/^```json\s*/, "").replace(/\s*```$/, "");
