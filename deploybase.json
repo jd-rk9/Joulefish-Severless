@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "cors": {
+      "allowOrigin": "https://joulefish.sites.deploybase.eu",
+      "allowMethods": ["POST", "OPTIONS"],
+      "allowHeaders": ["Content-Type", "Authorization", "Accept"],
+      "allowCredentials": true
+    }
+  }
+}

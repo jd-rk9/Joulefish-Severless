@@ -46,14 +46,19 @@ RULES FOR EINFACHE SPRACHE / PLAIN LANGUAGE:
 };
 
 export default async function handler(request) {
-  // Get the specific origin from the request headers
   const requestOrigin = request.headers.get("origin") || "https://joulefish.sites.deploybase.eu";
 
+  // Pure CORS headers (no Content-Type here)
   const corsHeaders = {
     "Access-Control-Allow-Origin": requestOrigin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept, X-Requested-With",
     "Access-Control-Allow-Credentials": "true",
+  };
+
+  // Pre-assembled headers for JSON responses
+  const jsonHeaders = {
+    ...corsHeaders,
     "Content-Type": "application/json",
   };
 
@@ -61,14 +66,14 @@ export default async function handler(request) {
   if (request.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
-      headers: corsHeaders,
+      headers: corsHeaders, // Clean 204 response without Content-Type
     });
   }
 
   if (request.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
-      headers: corsHeaders,
+      headers: jsonHeaders,
     });
   }
 
@@ -79,7 +84,7 @@ export default async function handler(request) {
     if (!text || typeof text !== "string" || text.trim() === "") {
       return new Response(
         JSON.stringify({ error: "Invalid input", message: "Text cannot be empty." }),
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: jsonHeaders }
       );
     }
 
@@ -157,7 +162,7 @@ export default async function handler(request) {
           modelUsed: selectedModel,
           modeUsed: isEasyMode ? "easy" : "plain"
         }),
-        { status: 200, headers: corsHeaders }
+        { status: 200, headers: jsonHeaders }
       );
     }
 
@@ -165,7 +170,7 @@ export default async function handler(request) {
     if (!apiKey) {
       return new Response(
         JSON.stringify({ error: "API Key Missing", message: "No LLM_API_KEY or GEMINI_API_KEY provided." }),
-        { status: 503, headers: corsHeaders }
+        { status: 503, headers: jsonHeaders }
       );
     }
 
@@ -231,13 +236,13 @@ export default async function handler(request) {
         modelUsed: selectedModel,
         modeUsed: isEasyMode ? "easy" : "plain"
       }),
-      { status: 200, headers: corsHeaders }
+      { status: 200, headers: jsonHeaders }
     );
 
   } catch (error) {
     return new Response(
       JSON.stringify({ error: "Simplification failed", message: error?.message || "An unknown error occurred." }),
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: jsonHeaders }
     );
   }
 }
