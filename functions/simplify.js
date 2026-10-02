@@ -77,8 +77,8 @@ export default async function handler(request: Request) {
       );
     }
 
-    // Process environment variables
-    const apiProvider = (process.env.LLM_API_PROVIDER || "gemini").toLowerCase();
+    // Process environment variables safely
+    const apiProvider = (process.env.LLM_API_PROVIDER ?? "gemini").toString().toLowerCase();
     const customUrl = process.env.LLM_API_URL;
     const apiKey = process.env.LLM_API_KEY || process.env.GEMINI_API_KEY;
     const selectedModel = model || process.env.LLM_MODEL_NAME_OVERRIDE || "gemma-4-26b-a4b-it";
@@ -92,7 +92,7 @@ export default async function handler(request: Request) {
 
     const augmentedText = `[STRICT REQUIREMENT: Input text language is ${detectedLang}. Output MUST be strictly in ${detectedLang}. DO NOT TRANSLATE. Apply ${targetStandard}.]\n\nInput text:\n${text}`;
 
-    // Path 1: Custom OpenAI-compatible endpoint (hostyourai.com)
+    // Path 1: Custom OpenAI-compatible endpoint
     if (apiProvider === "openai" || customUrl) {
       let endpoint = customUrl || "https://hostyourai.com/api/v1/chat/completions";
       if (!endpoint.endsWith("/chat/completions")) {
@@ -124,7 +124,9 @@ export default async function handler(request: Request) {
 
       const json: any = await fetchResponse.json();
       const responseContent = json.choices?.[0]?.message?.content;
-      if (!responseContent) throw new Error("Empty response from LLM host.");
+      if (!responseContent || typeof responseContent !== "string") {
+        throw new Error("Empty or invalid response content from LLM host.");
+      }
 
       let cleaned = responseContent.trim();
       if (cleaned.startsWith("```json")) {
@@ -180,12 +182,22 @@ export default async function handler(request: Request) {
       }
     });
 
-    let cleaned = (response.text || "").trim();
+    // Safely retrieve string from response.text() function
+    const rawText = typeof response.text === "function" ? response.text() : response.text;
+    let cleaned = (rawText || "").trim();
+
     if (cleaned.startsWith("```json")) {
       cleaned = cleaned.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+    } else if (cleaned.startsWith("```")) {
+      cleaned = cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
     }
 
-    const parsed = JSON.parse(cleaned);
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      parsed = { simplifiedText: cleaned };
+    }
 
     return new Response(
       JSON.stringify({
@@ -201,7 +213,7 @@ export default async function handler(request: Request) {
 
   } catch (error: any) {
     return new Response(
-      JSON.stringify({ error: "Simplification failed", message: error.message }),
+      JSON.stringify({ error: "Simplification failed", message: error?.message || "An unknown error occurred." }),
       { status: 500, headers: corsHeaders }
     );
   }
