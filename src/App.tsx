@@ -11,7 +11,8 @@ import {
   Cpu, 
   Sun, 
   Moon, 
-  ChevronRight
+  ChevronRight,
+  Globe
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import type { SimplifyResponse } from "./types";
@@ -230,7 +231,7 @@ function JOULEFISH_SIMPLIFY(text) {
             <div className={`p-2 rounded-xl transition-colors duration-200 ${
               isDarkMode ? "bg-indigo-600/20 text-indigo-400" : "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
             }`}>
-              <Sparkles className="w-6 h-6" />
+              <img src="/joulefish-logo.svg" alt="Joulefish Logo" className="w-8 h-8" />
             </div>
             <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-2">
               <h1 className="text-xl md:text-2xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
@@ -381,6 +382,41 @@ function JOULEFISH_SIMPLIFY(text) {
                       preservationToggle ? "translate-x-4" : "translate-x-0"
                     }`} />
                   </button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className={`text-[11px] font-bold uppercase tracking-widest mb-3 block flex items-center gap-1.5 ${
+                isDarkMode ? "text-slate-400" : "text-slate-500"
+              }`}>
+                <Globe className="w-3.5 h-3.5 text-indigo-500" />
+                Language Standards
+              </label>
+              
+              <div className="space-y-2">
+                <div className={`p-3.5 rounded-2xl border text-xs leading-relaxed transition-colors duration-200 ${
+                  isDarkMode ? "bg-[#21232B] border-slate-800 text-slate-300" : "bg-white border-indigo-50 text-slate-600 shadow-sm"
+                }`}>
+                  <strong className="text-indigo-600 dark:text-indigo-400 font-semibold block mb-1">🇩🇪 DE (German)</strong>
+                  <span className="block text-[11px] text-slate-500 dark:text-slate-400 mb-0.5">
+                    • <strong>Einfache Sprache:</strong> DIN ISO 24495-1 &amp; DIN 8581-1 (Plain language / B1 for general public)
+                  </span>
+                  <span className="block text-[11px] text-slate-500 dark:text-slate-400">
+                    • <strong>Leichte Sprache:</strong> DIN SPEC 33429 (Easy read / A2 accessible rules)
+                  </span>
+                </div>
+                <div className={`p-3.5 rounded-2xl border text-xs leading-relaxed transition-colors duration-200 ${
+                  isDarkMode ? "bg-[#21232B] border-slate-800 text-slate-300" : "bg-white border-indigo-50 text-slate-600 shadow-sm"
+                }`}>
+                  <strong className="text-indigo-600 dark:text-indigo-400 font-semibold block mb-0.5">🇬🇧 EN (English)</strong>
+                  Plain Language (ISO 24495-1) and Easy Read civil accessibility standards.
+                </div>
+                <div className={`p-3.5 rounded-2xl border text-xs leading-relaxed transition-colors duration-200 ${
+                  isDarkMode ? "bg-[#21232B] border-slate-800 text-slate-300" : "bg-white border-indigo-50 text-slate-600 shadow-sm"
+                }`}>
+                  <strong className="text-indigo-600 dark:text-indigo-400 font-semibold block mb-0.5">🇳🇱 NL (Dutch)</strong>
+                  Duidelijke Taal / B1 Eenvoudig Communiceren &amp; Makkelijk Lezen.
                 </div>
               </div>
             </div>

@@ -25,9 +25,81 @@ RULES FOR LEICHTE SPRACHE / EASY READ:
 3. SENTENCE LENGTH & STRUCTURE: Very short sentences (max 8–12 words). Exactly ONE sentence per line.
 4. GRAMMAR RESTRICTIONS: NO genitive, NO passive voice, NO subjunctive.
 5. STANDARDS BY LANGUAGE:
-- German: DIN SPEC 33429:2025-03.
-- English: Easy Read (A1/A2).
-- Dutch: Makkelijk Lezen (A1/A2).
+- German: Strictly follow Leichte Sprache per DIN SPEC 33429:2025-03.
+A proper deutsche einfache sprachen example: "Neue Regeln für die Beleuchtung in Münster
+
+   Die Stadt Münster möchte die Beleuchtung auf Straßen und Wegen verbessern.
+    
+   Die Menschen sollen sich dort auch nachts sicher fühlen.
+    
+   Gleichzeitig möchte die Stadt Tiere und Pflanzen schützen.
+    
+   Was möchte die Stadt erreichen?
+    
+    Die Stadt möchte:
+    
+    dunkle Straßen und Wege besser beleuchten,
+    Orte sicherer machen, an denen Menschen Angst haben,
+    Tiere und Pflanzen vor zu viel Licht schützen,
+    Strom sparen.
+    Was soll die Stadt tun?
+    
+    Die Stadt soll prüfen:
+    
+    Wo ist es nachts zu dunkel?
+    
+    Wo fühlen sich Menschen unsicher?
+    
+    Danach soll die Stadt prüfen, wo eine bessere Beleuchtung nötig ist.
+    
+    An vielen Orten soll moderne Technik eingesetzt werden.
+    
+    Die Lampen können dann automatisch heller oder dunkler werden.
+    
+    Zum Beispiel:
+    
+    Wenn Menschen unterwegs sind, kann das Licht heller werden.
+    
+    Wenn niemand unterwegs ist, kann das Licht dunkler werden.
+    
+    In neuen Wohngebieten sollen Lampen eingebaut werden, die man heller oder dunkler stellen kann.
+    
+    Die Stadt soll auch prüfen, ob sie dafür Geld aus Förderprogrammen bekommen kann.
+    
+    Förderprogramme sind finanzielle Hilfen zum Beispiel vom Land, vom Bund oder von der Europäischen Union.
+    
+    Wie können die Menschen in Münster mitmachen?
+    
+    Auch die Menschen in Münster sollen ihre Meinung sagen können.
+    
+    Dafür soll es einfache digitale Möglichkeiten geben.
+    
+    Zum Beispiel eine Umfrage mit dem Handy.
+    
+    Die Menschen können der Stadt zum Beispiel sagen:
+    
+    Hier ist es zu dunkel.
+    Hier fühle ich mich unsicher.
+    Wie geht es danach weiter?
+    
+    Die Stadt sammelt die Hinweise.
+    
+    Dann prüft die Stadt die Ergebnisse.
+    
+    Danach schreibt die Verwaltung einen Bericht für den Stadtrat.
+    
+    In dem Bericht steht:
+    
+    Wo gibt es Probleme?
+    Was kann verbessert werden?
+    Was soll die Stadt als Nächstes tun?
+    
+    Danach entscheidet der Stadtrat über die weiteren Schritte." 
+   
+
+- English: Strictly follow Easy Read standards (A1/A2).
+- Dutch: Strictly follow Makkelijk Lezen / Eenvoudige Taal (A1/A2).
+- Other languages: Follow CEFR A1/A2 simple reading guidelines.
 6. OUTPUT strictly valid JSON with keys: "language", "styleApplied", and "simplifiedText".`;
   }
 
