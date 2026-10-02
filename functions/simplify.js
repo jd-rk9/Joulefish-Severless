@@ -51,7 +51,7 @@ export default async function handler(request) {
   // Pure CORS headers (no Content-Type here)
   const corsHeaders = {
     "Access-Control-Allow-Origin": requestOrigin,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept, X-Requested-With",
     "Access-Control-Allow-Credentials": "true",
   };
@@ -70,12 +70,25 @@ export default async function handler(request) {
     });
   }
 
-  if (request.method !== "POST") {
+  if (request.method !== "POST" && request.method !== "GET") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
       headers: jsonHeaders,
     });
   }
+
+  if (request.method === "GET") {
+  // Logic to fetch invocation/job status by ID from your database or queue
+  return new Response(JSON.stringify({
+    data: {
+      status: "completed", // or "pending"
+      response_body: "..." // base64 encoded result
+    }
+  }), {
+    status: 200,
+    headers: jsonHeaders,
+  });
+}
 
   try {
     const body = await request.json();
