@@ -186,8 +186,21 @@ export default function App() {
     setApiResult(null);
     const start = performance.now();
 
+// Trigger simplification request using the Deploybase function endpoint with Async Polling
+  const handleSimplify = async () => {
+    if (!inputText.trim()) {
+      setError("Please write or paste a political motion / amendment to simplify.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setApiResult(null);
+    const start = performance.now();
+
     try {
-      const response = await fetch(SIMPLIFY_API_URL, {
+      // Step 1: Submit the request (POST)
+      const initialResponse = await fetch(SIMPLIFY_API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -199,16 +212,69 @@ export default function App() {
         })
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || data.error || "Failed to process request");
+      if (!initialResponse.ok) {
+        const errData = await initialResponse.json().catch(() => ({}));
+        throw new Error(errData.message || errData.error || `HTTP ${initialResponse.status} failure on submit`);
       }
 
-      setApiResult(data);
-      
+      const initialData = await initialResponse.json();
+      const pollUrl = initialData?.data?.poll_url;
+
+      if (!pollUrl) {
+        // Fallback if the backend responds synchronously
+        if (initialData.simplifiedText) {
+          setApiResult(initialData);
+          return;
+        }
+        throw new Error("Invalid response format: Missing poll_url from Deploybase API");
+      }
+
+      // Base origin for Deploybase
+      const baseUrl = "https://api.deploybase.eu";
+      const fullPollUrl = pollUrl.startsWith("http") ? pollUrl : `${baseUrl}${pollUrl}`;
+
+      // Step 2: Poll until the task finishes (status === "completed")
+      let isCompleted = false;
+      let finalData: SimplifyResponse | null = null;
+      let maxRetries = 20; // 30-second timeout safeguard
+
+      while (!isCompleted && maxRetries > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 1500)); // Wait 1.5s between polls
+
+        const pollResponse = await fetch(fullPollUrl);
+        if (!pollResponse.ok) {
+          throw new Error(`Polling failed with status code ${pollResponse.status}`);
+        }
+
+        const pollResult = await pollResponse.json();
+        const status = pollResult?.data?.status;
+
+        if (status === "completed") {
+          isCompleted = true;
+          const base64Body = pollResult.data.response_body;
+
+          if (!base64Body) {
+            throw new Error("Job completed, but response_body was empty.");
+          }
+
+          // Step 3: Base64 decode response body
+          const decodedJsonString = atob(base64Body);
+          finalData = JSON.parse(decodedJsonString);
+        } else if (status === "failed") {
+          throw new Error("Simplification job failed on serverless worker.");
+        }
+
+        maxRetries--;
+      }
+
+      if (!finalData) {
+        throw new Error("Request timed out waiting for backend worker completion.");
+      }
+
+      setApiResult(finalData);
+
       const inputChars = inputText.length;
-      const outputChars = data.simplifiedText ? data.simplifiedText.length : 0;
+      const outputChars = finalData.simplifiedText ? finalData.simplifiedText.length : 0;
       const totalEstimatedTokens = Math.ceil((inputChars + outputChars) / 3.8);
       setTokensUsed(totalEstimatedTokens);
 
