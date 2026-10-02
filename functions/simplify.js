@@ -122,7 +122,7 @@ export default async function handler(request) {
         throw new Error(`Custom API returned status ${fetchResponse.status}: ${errText}`);
       }
 
-      const json: any = await fetchResponse.json();
+      const json = await fetchResponse.json();
       const responseContent = json.choices?.[0]?.message?.content;
       if (!responseContent || typeof responseContent !== "string") {
         throw new Error("Empty or invalid response content from LLM host.");
@@ -135,7 +135,7 @@ export default async function handler(request) {
         cleaned = cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
       }
 
-      let parsed: any = {};
+      let parsed = {};
       try {
         parsed = JSON.parse(cleaned);
       } catch {
@@ -192,7 +192,7 @@ export default async function handler(request) {
       cleaned = cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
     }
 
-    let parsed: any = {};
+    let parsed = {};
     try {
       parsed = JSON.parse(cleaned);
     } catch {
