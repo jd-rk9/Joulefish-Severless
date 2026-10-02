@@ -1,11 +1,28 @@
 // functions/simplify.ts
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
-  "Content-Type": "application/json",
-};
+
+
+export default async function handler(request) {
+  // Get the specific origin from the request headers
+  const requestOrigin = request.headers.get("origin") || "https://joulefish.sites.deploybase.eu";
+
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": requestOrigin, // Use specific origin, not *
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
+    "Access-Control-Allow-Credentials": "true",
+    "Content-Type": "application/json",
+  };
+
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
+  }
+}
+  
+  // ... rest of your code using corsHeaders
 
 const detectLanguage = (text) => {
   const lower = text.toLowerCase();
