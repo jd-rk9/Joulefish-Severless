@@ -65,9 +65,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"workspace" | "api-docs" | "apps-script">("workspace");
-
-  const BASE_URL = "https://api.deploybase.eu";
-  const SIMPLIFY_API_URL = import.meta.env.VITE_SIMPLIFY_FUNCTION_URL || `${BASE_URL}/api/v1/public/functions/joulefish/simplify`;
+  const SIMPLIFY_API_URL = import.meta.env.VITE_SIMPLIFY_FUNCTION_URL || "https://simplify-joulefish.fn.deploybase.eu";
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem("joulefish-darkmode");
@@ -130,12 +128,6 @@ export default function App() {
     document.body.removeChild(element);
   };
 
-  const decodeBase64Utf8 = (base64Str: string): string => {
-    const binaryStr = atob(base64Str);
-    const bytes = Uint8Array.from(binaryStr, (char) => char.charCodeAt(0));
-    return new TextDecoder("utf-8").decode(bytes);
-  };
-
   const handleSimplify = async () => {
     if (!inputText.trim()) {
       setError("Please write or paste a political motion / amendment to simplify.");
@@ -148,8 +140,7 @@ export default function App() {
     const start = performance.now();
 
     try {
-      // 1. Submit function invocation request (POST)
-      const initialResponse = await fetch(SIMPLIFY_API_URL, {
+      const response = await fetch(SIMPLIFY_API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -157,72 +148,21 @@ export default function App() {
         },
         body: JSON.stringify({
           text: inputText,
+          model: selectedModel,
           mode: ceilingText === "B1 / Plain" ? "plain" : "easy"
         })
       });
 
-      if (!initialResponse.ok) {
-        const errData = await initialResponse.json().catch(() => ({}));
-        throw new Error(errData.message || errData.error || `HTTP ${initialResponse.status} error on submit`);
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || errData.error || `HTTP ${response.status} error from server`);
       }
 
-      const initialData = await initialResponse.json();
-      const pollPath = initialData?.data?.poll_url;
-
-      if (!pollPath) {
-        throw new Error("Invalid backend response: Missing poll_url ticket.");
-      }
-
-      const fullPollUrl = pollPath.startsWith("http") ? pollPath : `${BASE_URL}${pollPath}`;
-
-      // 2. Poll job ticket until completed (GET loop)
-      let isCompleted = false;
-      let finalData: SimplifyResponse | null = null;
-      let attempts = 0;
-      const maxAttempts = 30; // Max 45s wait time (30 * 1500ms)
-
-      while (!isCompleted && attempts < maxAttempts) {
-        attempts++;
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-
-        const pollResponse = await fetch(fullPollUrl, {
-          method: "GET",
-          headers: {
-            "Accept": "application/json"
-          }
-        });
-
-        if (!pollResponse.ok) {
-          throw new Error(`Polling request failed with status code ${pollResponse.status}`);
-        }
-
-        const pollResult = await pollResponse.json();
-        const status = pollResult?.data?.status;
-
-        if (status === "completed") {
-          isCompleted = true;
-          const base64Body = pollResult?.data?.response_body;
-
-          if (!base64Body) {
-            throw new Error("Job completed, but response_body was missing or empty.");
-          }
-
-          // Decode raw base64 UTF-8 string to JSON object
-          const decodedJsonString = decodeBase64Utf8(base64Body);
-          finalData = JSON.parse(decodedJsonString);
-        } else if (status === "failed") {
-          throw new Error("Simplification job failed during backend processing.");
-        }
-      }
-
-      if (!finalData) {
-        throw new Error("Request timed out waiting for backend worker to complete.");
-      }
-
-      setApiResult(finalData);
+      const data: SimplifyResponse = await response.json();
+      setApiResult(data);
 
       const inputChars = inputText.length;
-      const outputChars = finalData.simplifiedText ? finalData.simplifiedText.length : 0;
+      const outputChars = data.simplifiedText ? data.simplifiedText.length : 0;
       const totalEstimatedTokens = Math.ceil((inputChars + outputChars) / 3.8);
       setTokensUsed(totalEstimatedTokens);
 
@@ -231,7 +171,7 @@ export default function App() {
       setLatency(`${elapsed}s`);
 
     } catch (err: any) {
-      setError(err?.message || "An error occurred while communicating with Deploybase API.");
+      setError(err?.message || "An error occurred while communicating with the simplification service.");
     } finally {
       setIsLoading(false);
     }
@@ -255,25 +195,20 @@ function JOULEFISH_SIMPLIFY(text) {
   if (!text) return "";
   var url = "${SIMPLIFY_API_URL}";
   var payload = { text: text, mode: "plain" };
-  var options = { method: "post", contentType: "application/json", payload: JSON.stringify(payload), muteHttpExceptions: true };
+  var options = {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
   try {
     var response = UrlFetchApp.fetch(url, options);
     var json = JSON.parse(response.getContentText());
-    var pollUrl = json.data ? json.data.poll_url : null;
-    if (!pollUrl) return "Error: No poll URL returned.";
-    var fullPollUrl = pollUrl.indexOf("http") === 0 ? pollUrl : "${BASE_URL}" + pollUrl;
-    for (var i = 0; i < 20; i++) {
-      Utilities.sleep(1500);
-      var pollRes = UrlFetchApp.fetch(fullPollUrl, { muteHttpExceptions: true });
-      var pollJson = JSON.parse(pollRes.getContentText());
-      if (pollJson.data && pollJson.data.status === "completed") {
-        var base64Data = pollJson.data.response_body;
-        var decodedBytes = Utilities.base64Decode(base64Data);
-        var decodedString = Utilities.newBlob(decodedBytes).getDataAsString();
-        return JSON.parse(decodedString).simplifiedText;
-      }
+    if (response.getResponseCode() === 200 && json.simplifiedText) {
+      return json.simplifiedText;
+    } else {
+      return "Error: " + (json.message || json.error || "Failed with code " + response.getResponseCode());
     }
-    return "Error: Timeout waiting for response.";
   } catch (err) {
     return "Error: " + err.toString();
   }
@@ -625,7 +560,7 @@ function JOULEFISH_SIMPLIFY(text) {
             <div className="max-w-3xl space-y-6">
               <h2 className="text-lg font-bold">Deploybase Endpoint Integration</h2>
               <div className="p-4 rounded-xl border bg-slate-900 text-slate-100 font-mono text-xs overflow-x-auto">
-                <p className="text-slate-400">// Step 1: Submit POST payload to get poll_url ticket</p>
+                <p className="text-slate-400">// Direct HTTPS Function Door (Synchronous with CORS support)</p>
                 <p className="mt-2 text-indigo-400">POST {SIMPLIFY_API_URL}</p>
                 <pre className="mt-2 text-emerald-400">
 {JSON.stringify({
@@ -633,8 +568,13 @@ function JOULEFISH_SIMPLIFY(text) {
   mode: "plain"
 }, null, 2)}
                 </pre>
-                <p className="mt-4 text-slate-400">// Step 2: Poll status via GET request until status is "completed"</p>
-                <p className="mt-2 text-indigo-400">GET https://api.deploybase.eu/api/v1/public/functions/joulefish/simplify/invocations/{"<invocation_id>"}</p>
+                <p className="mt-4 text-slate-400">// Direct Response (HTTP 200)</p>
+                <pre className="mt-2 text-indigo-200">
+{JSON.stringify({
+  simplifiedText: "Der Rat beschließt die Maßnahme in einfacher Sprache...",
+  language: "de"
+}, null, 2)}
+                </pre>
               </div>
             </div>
           )}
