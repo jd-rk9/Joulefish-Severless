@@ -18,6 +18,13 @@ export default defineConfig(() => {
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      proxy: {
+        '/api': {
+          target: 'https://api.deploybase.eu',
+          changeOrigin: true,
+          rewrite: (p) => p.replace(/^\/api/, '/api/v1/public/functions/joulefish'),
+        },
+      },
     },
   };
 });
