@@ -1,30 +1,6 @@
 // functions/simplify.ts
 
-
-
-export default async function handler(request) {
-  // Get the specific origin from the request headers
-  const requestOrigin = request.headers.get("origin") || "https://joulefish.sites.deploybase.eu";
-
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": requestOrigin, // Use specific origin, not *
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
-    "Access-Control-Allow-Credentials": "true",
-    "Content-Type": "application/json",
-  };
-
-  if (request.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders,
-    });
-  }
-}
-  
-  // ... rest of your code using corsHeaders
-
-const detectLanguage = (text) => {
+const detectLanguage = (text: string) => {
   const lower = text.toLowerCase();
   const de = (lower.match(/\b(der|die|das|und|ist|nicht|von|für)\b/g) || []).length;
   const en = (lower.match(/\b(the|and|is|not|this|with|for)\b/g) || []).length;
@@ -69,8 +45,19 @@ RULES FOR EINFACHE SPRACHE / PLAIN LANGUAGE:
 5. OUTPUT strictly valid JSON with keys: "language", "styleApplied", and "simplifiedText".`;
 };
 
-export default async function handler(request) {
-  // Handle CORS preflight options check
+export default async function handler(request: Request) {
+  // Get the specific origin from the request headers
+  const requestOrigin = request.headers.get("origin") || "https://joulefish.sites.deploybase.eu";
+
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": requestOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
+    "Access-Control-Allow-Credentials": "true",
+    "Content-Type": "application/json",
+  };
+
+  // Handle CORS preflight check
   if (request.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
@@ -118,7 +105,7 @@ export default async function handler(request) {
         endpoint = endpoint.replace(/\/$/, "") + "/chat/completions";
       }
 
-      const headers = { "Content-Type": "application/json" };
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (apiKey) {
         headers["Authorization"] = `Bearer ${apiKey}`;
       }
@@ -154,7 +141,7 @@ export default async function handler(request) {
         cleaned = cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
       }
 
-      let parsed = {};
+      let parsed: Record<string, any> = {};
       try {
         parsed = JSON.parse(cleaned);
       } catch {
@@ -174,7 +161,7 @@ export default async function handler(request) {
       );
     }
 
-    // Path 2: Direct Gemini REST API (No heavy SDK dependencies)
+    // Path 2: Direct Gemini REST API
     if (!apiKey) {
       return new Response(
         JSON.stringify({ error: "API Key Missing", message: "No LLM_API_KEY or GEMINI_API_KEY provided." }),
@@ -228,7 +215,7 @@ export default async function handler(request) {
       cleaned = cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
     }
 
-    let parsed = {};
+    let parsed: Record<string, any> = {};
     try {
       parsed = JSON.parse(cleaned);
     } catch {
@@ -247,7 +234,7 @@ export default async function handler(request) {
       { status: 200, headers: corsHeaders }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     return new Response(
       JSON.stringify({ error: "Simplification failed", message: error?.message || "An unknown error occurred." }),
       { status: 500, headers: corsHeaders }
