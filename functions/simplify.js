@@ -1,10 +1,10 @@
 // functions/simplify.ts
 
 const corsHeaders = {
-  "content-type": "application/json",
-  "access-control-allow-origin": "*",
-  "access-control-allow-methods": "POST, OPTIONS",
-  "access-control-allow-headers": "Content-Type, Authorization"
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
+  "Content-Type": "application/json",
 };
 
 const detectLanguage = (text) => {
@@ -55,13 +55,16 @@ RULES FOR EINFACHE SPRACHE / PLAIN LANGUAGE:
 export default async function handler(request) {
   // Handle CORS preflight options check
   if (request.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
   }
 
   if (request.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
-      headers: corsHeaders
+      headers: corsHeaders,
     });
   }
 
