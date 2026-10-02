@@ -1,6 +1,6 @@
 // functions/simplify.ts
 
-const detectLanguage = (text: string) => {
+const detectLanguage = (text) => {
   const lower = text.toLowerCase();
   const de = (lower.match(/\b(der|die|das|und|ist|nicht|von|für)\b/g) || []).length;
   const en = (lower.match(/\b(the|and|is|not|this|with|for)\b/g) || []).length;
@@ -45,7 +45,7 @@ RULES FOR EINFACHE SPRACHE / PLAIN LANGUAGE:
 5. OUTPUT strictly valid JSON with keys: "language", "styleApplied", and "simplifiedText".`;
 };
 
-export default async function handler(request: Request) {
+export default async function handler(request) {
   // Get the specific origin from the request headers
   const requestOrigin = request.headers.get("origin") || "https://joulefish.sites.deploybase.eu";
 
@@ -105,7 +105,7 @@ export default async function handler(request: Request) {
         endpoint = endpoint.replace(/\/$/, "") + "/chat/completions";
       }
 
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const headers = { "Content-Type": "application/json" };
       if (apiKey) {
         headers["Authorization"] = `Bearer ${apiKey}`;
       }
@@ -141,7 +141,7 @@ export default async function handler(request: Request) {
         cleaned = cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
       }
 
-      let parsed: Record<string, any> = {};
+      let parsed = {};
       try {
         parsed = JSON.parse(cleaned);
       } catch {
@@ -215,7 +215,7 @@ export default async function handler(request: Request) {
       cleaned = cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
     }
 
-    let parsed: Record<string, any> = {};
+    let parsed = {};
     try {
       parsed = JSON.parse(cleaned);
     } catch {
@@ -234,7 +234,7 @@ export default async function handler(request: Request) {
       { status: 200, headers: corsHeaders }
     );
 
-  } catch (error: any) {
+  } catch (error) {
     return new Response(
       JSON.stringify({ error: "Simplification failed", message: error?.message || "An unknown error occurred." }),
       { status: 500, headers: corsHeaders }
