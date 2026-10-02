@@ -143,6 +143,7 @@ export default function App() {
     try {
       const initialResponse = await fetch(SIMPLIFY_API_URL, {
         method: "POST",
+        mode: "cors",
         headers: {
           "Content-Type": "application/json"
         },
@@ -179,7 +180,10 @@ export default function App() {
       while (!isCompleted && maxRetries > 0) {
         await new Promise((resolve) => setTimeout(resolve, 1500));
 
-        const pollResponse = await fetch(fullPollUrl);
+        const pollResponse = await fetch(fullPollUrl, {
+          method: "GET",
+          mode: "cors"
+        });
         if (!pollResponse.ok) {
           throw new Error(`Polling failed with status code ${pollResponse.status}`);
         }
