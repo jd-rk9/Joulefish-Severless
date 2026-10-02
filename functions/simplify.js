@@ -8,7 +8,7 @@ const corsHeaders = {
   "access-control-allow-headers": "Content-Type, Authorization"
 };
 
-const detectLanguage = (text: string): string => {
+const detectLanguage = (text) => {
   const lower = text.toLowerCase();
   const de = (lower.match(/\b(der|die|das|und|ist|nicht|von|für)\b/g) || []).length;
   const en = (lower.match(/\b(the|and|is|not|this|with|for)\b/g) || []).length;
@@ -20,7 +20,7 @@ const detectLanguage = (text: string): string => {
   return "Detected Language";
 };
 
-const buildSystemPrompt = (mode: string = "plain"): string => {
+const buildSystemPrompt = (mode = "plain") => {
   const isEasy = mode === "easy" || mode === "A2 / Simple" || mode === "a2";
 
   if (isEasy) {
@@ -53,7 +53,7 @@ RULES FOR EINFACHE SPRACHE / PLAIN LANGUAGE:
 5. OUTPUT strictly valid JSON with keys: "language", "styleApplied", and "simplifiedText".`;
 };
 
-export default async function handler(request: Request) {
+export default async function handler(request) {
   // Handle CORS preflight options check
   if (request.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -99,7 +99,7 @@ export default async function handler(request: Request) {
         endpoint = endpoint.replace(/\/$/, "") + "/chat/completions";
       }
 
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const headers = { "Content-Type": "application/json" };
       if (apiKey) {
         headers["Authorization"] = `Bearer ${apiKey}`;
       }
@@ -211,7 +211,7 @@ export default async function handler(request: Request) {
       { status: 200, headers: corsHeaders }
     );
 
-  } catch (error: any) {
+  } catch (error) {
     return new Response(
       JSON.stringify({ error: "Simplification failed", message: error?.message || "An unknown error occurred." }),
       { status: 500, headers: corsHeaders }
