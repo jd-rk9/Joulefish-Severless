@@ -1,29 +1,17 @@
 import { useState, useEffect } from "react";
 import { 
-  Scale, 
   FileText, 
   Sparkles, 
   ArrowRight, 
   Languages, 
   Copy, 
   Check, 
-  RotateCcw, 
-  Info, 
-  Globe, 
-  Code,
-  CheckCircle2,
-  AlertTriangle,
-  Zap,
-  Download,
-  Sliders,
-  Database,
-  Lock,
-  Cpu,
-  Sun,
-  Moon,
-  ChevronRight,
-  ClipboardList,
-  AlertCircle
+  Download, 
+  Sliders, 
+  Cpu, 
+  Sun, 
+  Moon, 
+  ChevronRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import type { SimplifyResponse } from "./types";
@@ -36,7 +24,6 @@ interface ExampleItem {
   text: string;
 }
 
-// Default fallback examples if API discovery is not configured
 const DEFAULT_EXAMPLES: ExampleItem[] = [
   {
     id: "de-motion",
@@ -70,20 +57,17 @@ const DEFAULT_MODELS = [
 export default function App() {
   const [inputText, setInputText] = useState("");
   const [selectedModel, setSelectedModel] = useState("gemma-4-26b-a4b-it");
-  const [availableModels, setAvailableModels] = useState<{id: string, name: string}[]>(DEFAULT_MODELS);
-  const [examples, setExamples] = useState<ExampleItem[]>(DEFAULT_EXAMPLES);
+  const [availableModels] = useState<{id: string, name: string}[]>(DEFAULT_MODELS);
+  const [examples] = useState<ExampleItem[]>(DEFAULT_EXAMPLES);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(1);
   const [apiResult, setApiResult] = useState<SimplifyResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [copiedJson, setCopiedJson] = useState(false);
   const [activeTab, setActiveTab] = useState<"workspace" | "api-docs" | "apps-script">("workspace");
 
-  // Dynamic Deploybase Function URL routing
   const SIMPLIFY_API_URL = import.meta.env.VITE_SIMPLIFY_FUNCTION_URL || "https://api.deploybase.eu/api/v1/public/functions/joulefish/simplify";
 
-  // Dark Mode State
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem("joulefish-darkmode");
     return saved !== null ? saved === "true" : false;
@@ -93,29 +77,14 @@ export default function App() {
     localStorage.setItem("joulefish-darkmode", String(isDarkMode));
   }, [isDarkMode]);
 
-  // Copy helper for dynamic code blocks
   const [copiedSheetsScript, setCopiedSheetsScript] = useState(false);
-  const [copiedDocsScript, setCopiedDocsScript] = useState(false);
 
-  // Metrics simulation / measurement
   const [latency, setLatency] = useState<string>("0.0s");
   const [tokensUsed, setTokensUsed] = useState<number>(0);
 
-  // Intent Toggles
   const [ceilingText, setCeilingText] = useState("B1 / Plain");
   const [preservationToggle, setPreservationToggle] = useState(true);
-  const [languageLockToggle, setLanguageLockToggle] = useState(true);
 
-  // Get active web environment origin
-  const [originUrl, setOriginUrl] = useState("https://api.joulefish.io");
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setOriginUrl(window.location.origin);
-    }
-  }, []);
-
-  // Simulate execution steps during API loading
   useEffect(() => {
     let timer1: NodeJS.Timeout;
     let timer2: NodeJS.Timeout;
@@ -137,30 +106,16 @@ export default function App() {
     };
   }, [isLoading]);
 
-  // Copy to clipboard helper
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const copyJsonResponse = () => {
-    if (!apiResult) return;
-    navigator.clipboard.writeText(JSON.stringify(apiResult, null, 2));
-    setCopiedJson(true);
-    setTimeout(() => setCopiedJson(false), 2000);
-  };
-
   const copySheetsCode = () => {
     navigator.clipboard.writeText(getSheetsScript());
     setCopiedSheetsScript(true);
     setTimeout(() => setCopiedSheetsScript(false), 2000);
-  };
-
-  const copyDocsCode = () => {
-    navigator.clipboard.writeText(getDocsScript());
-    setCopiedDocsScript(true);
-    setTimeout(() => setCopiedDocsScript(false), 2000);
   };
 
   const downloadSummaryFile = () => {
@@ -174,19 +129,6 @@ export default function App() {
     document.body.removeChild(element);
   };
 
-  // Trigger simplification request using the Deploybase function endpoint
-  const handleSimplify = async () => {
-    if (!inputText.trim()) {
-      setError("Please write or paste a political motion / amendment to simplify.");
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    setApiResult(null);
-    const start = performance.now();
-
-// Trigger simplification request using the Deploybase function endpoint with Async Polling
   const handleSimplify = async () => {
     if (!inputText.trim()) {
       setError("Please write or paste a political motion / amendment to simplify.");
@@ -199,7 +141,6 @@ export default function App() {
     const start = performance.now();
 
     try {
-      // Step 1: Submit the request (POST)
       const initialResponse = await fetch(SIMPLIFY_API_URL, {
         method: "POST",
         headers: {
@@ -221,7 +162,6 @@ export default function App() {
       const pollUrl = initialData?.data?.poll_url;
 
       if (!pollUrl) {
-        // Fallback if the backend responds synchronously
         if (initialData.simplifiedText) {
           setApiResult(initialData);
           return;
@@ -229,17 +169,15 @@ export default function App() {
         throw new Error("Invalid response format: Missing poll_url from Deploybase API");
       }
 
-      // Base origin for Deploybase
       const baseUrl = "https://api.deploybase.eu";
       const fullPollUrl = pollUrl.startsWith("http") ? pollUrl : `${baseUrl}${pollUrl}`;
 
-      // Step 2: Poll until the task finishes (status === "completed")
       let isCompleted = false;
       let finalData: SimplifyResponse | null = null;
-      let maxRetries = 20; // 30-second timeout safeguard
+      let maxRetries = 20;
 
       while (!isCompleted && maxRetries > 0) {
-        await new Promise((resolve) => setTimeout(resolve, 1500)); // Wait 1.5s between polls
+        await new Promise((resolve) => setTimeout(resolve, 1500));
 
         const pollResponse = await fetch(fullPollUrl);
         if (!pollResponse.ok) {
@@ -257,7 +195,6 @@ export default function App() {
             throw new Error("Job completed, but response_body was empty.");
           }
 
-          // Step 3: Base64 decode response body
           const decodedJsonString = atob(base64Body);
           finalData = JSON.parse(decodedJsonString);
         } else if (status === "failed") {
@@ -301,87 +238,33 @@ export default function App() {
     setApiResult(null);
   };
 
-  // Google Apps Script generator snippet pointing to Deploybase Function URL
   const getSheetsScript = () => {
-    return `/**
- * Custom Google Sheets Function to simplify legal/civic text
- * @param {string} text The target motion or paragraph to simplify
- * @return {string} The simplified plain language output.
- * @customfunction
- */
+    return `/** Custom Google Sheets Function */
 function JOULEFISH_SIMPLIFY(text) {
   if (!text) return "";
   var url = "${SIMPLIFY_API_URL}";
-  var payload = {
-    text: text,
-    mode: "plain"
-  };
-  var options = {
-    method: "post",
-    contentType: "application/json",
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  };
+  var payload = { text: text, mode: "plain" };
+  var options = { method: "post", contentType: "application/json", payload: JSON.stringify(payload), muteHttpExceptions: true };
   try {
     var response = UrlFetchApp.fetch(url, options);
-    var responseCode = response.getResponseCode();
     var json = JSON.parse(response.getContentText());
-    if (responseCode === 200 && json.simplifiedText) {
-      return json.simplifiedText;
-    } else {
-      return "Error: " + (json.message || json.error || "Failed with code " + responseCode);
+    var pollUrl = json.data ? json.data.poll_url : null;
+    if (!pollUrl) return "Error: No poll URL returned.";
+    var fullPollUrl = "https://api.deploybase.eu" + pollUrl;
+    for (var i = 0; i < 10; i++) {
+      Utilities.sleep(1500);
+      var pollRes = UrlFetchApp.fetch(fullPollUrl, { muteHttpExceptions: true });
+      var pollJson = JSON.parse(pollRes.getContentText());
+      if (pollJson.data && pollJson.data.status === "completed") {
+        var base64Data = pollJson.data.response_body;
+        var decodedBytes = Utilities.base64Decode(base64Data);
+        var decodedString = Utilities.newBlob(decodedBytes).getDataAsString();
+        return JSON.parse(decodedString).simplifiedText;
+      }
     }
+    return "Error: Timeout waiting for response.";
   } catch (err) {
     return "Error: " + err.toString();
-  }
-}`;
-  };
-
-  const getDocsScript = () => {
-    return `/**
- * Custom menu in Google Docs to simplify highlighted text
- */
-function onOpen() {
-  DocumentApp.getUi()
-    .createMenu('Joulefish')
-    .addItem('Simplify Selected Text', 'simplifySelection')
-    .addToUi();
-}
-
-function simplifySelection() {
-  var doc = DocumentApp.getActiveDocument();
-  var selection = doc.getSelection();
-  
-  if (!selection) {
-    DocumentApp.getUi().alert('Selection Required: Please highlight legal text first.');
-    return;
-  }
-  
-  var elements = selection.getSelectedElements();
-  var element = elements[0].getElement();
-  var text = element.editAsText ? element.editAsText().getText() : element.getText();
-  
-  if (!text || text.trim() === "") return;
-  
-  var url = "${SIMPLIFY_API_URL}";
-  var payload = { text: text, mode: "plain" };
-  var options = {
-    method: "post",
-    contentType: "application/json",
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  };
-  
-  try {
-    var response = UrlFetchApp.fetch(url, options);
-    var json = JSON.parse(response.getContentText());
-    if (response.getResponseCode() === 200 && json.simplifiedText) {
-      element.editAsText ? element.editAsText().setText(json.simplifiedText) : element.setText(json.simplifiedText);
-    } else {
-      DocumentApp.getUi().alert('Error: ' + (json.message || "Failed API call."));
-    }
-  } catch (err) {
-    DocumentApp.getUi().alert('Pipeline Error: ' + err.toString());
   }
 }`;
   };
@@ -454,7 +337,6 @@ function simplifySelection() {
             </button>
           </div>
 
-          {/* Dark mode toggle */}
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
             className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer hover:scale-105 ${
@@ -565,7 +447,6 @@ function simplifySelection() {
         }`}>
           {activeTab === "workspace" && (
             <div className="flex flex-col gap-6 flex-1">
-              {/* Input Section */}
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <h2 className={`text-[11px] font-bold uppercase tracking-widest flex items-center gap-1.5 ${
@@ -603,7 +484,6 @@ function simplifySelection() {
                     }`}
                   />
 
-                  {/* Examples Bar */}
                   <div className={`mt-4 pt-3 border-t ${isDarkMode ? "border-slate-800" : "border-slate-100"}`}>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">
                       Quick Templates
@@ -751,7 +631,7 @@ function simplifySelection() {
             <div className="max-w-3xl space-y-6">
               <h2 className="text-lg font-bold">Google Workspace Scripts</h2>
               <p className="text-xs text-slate-400">
-                Copy the snippet below into Extensions &gt; Apps Script inside Google Sheets or Google Docs to call your Deploybase serverless function directly.
+                Copy the snippet below into Extensions &gt; Apps Script inside Google Sheets to call your Deploybase serverless function directly.
               </p>
               
               <div className="space-y-4">
