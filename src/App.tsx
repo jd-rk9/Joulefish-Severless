@@ -81,7 +81,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"workspace" | "api-docs" | "apps-script">("workspace");
 
   // Dynamic Deploybase Function URL routing
-  const SIMPLIFY_API_URL = import.meta.env.VITE_SIMPLIFY_FUNCTION_URL || "https://simplify-joulefish.fn.deploybase.eu";
+  const SIMPLIFY_API_URL = import.meta.env.VITE_SIMPLIFY_FUNCTION_URL || "https://api.deploybase.eu/api/v1/public/functions/joulefish/simplify";
 
   // Dark Mode State
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
