@@ -12,7 +12,11 @@ import {
   Sun, 
   Moon, 
   ChevronRight,
-  Globe
+  Globe,
+  Terminal,
+  Code2,
+  BookOpen,
+  Info
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import type { SimplifyResponse } from "./types";
@@ -78,6 +82,8 @@ export default function App() {
   }, [isDarkMode]);
 
   const [copiedSheetsScript, setCopiedSheetsScript] = useState(false);
+  const [copiedEndpoint, setCopiedEndpoint] = useState(false);
+  const [copiedCurl, setCopiedCurl] = useState(false);
 
   const [latency, setLatency] = useState<string>("0.0s");
   const [tokensUsed, setTokensUsed] = useState<number>(0);
@@ -116,6 +122,27 @@ export default function App() {
     navigator.clipboard.writeText(getSheetsScript());
     setCopiedSheetsScript(true);
     setTimeout(() => setCopiedSheetsScript(false), 2000);
+  };
+
+  const copyEndpoint = () => {
+    navigator.clipboard.writeText(SIMPLIFY_API_URL);
+    setCopiedEndpoint(true);
+    setTimeout(() => setCopiedEndpoint(false), 2000);
+  };
+
+  const getCurlSnippet = () => {
+    return `curl -X POST "${SIMPLIFY_API_URL}" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "text": "Der Stadtrat beschließt die Bereitstellung finanzieller Mittel für die Instandsetzung der Fußgängerzone im Haushalt 2026.",
+    "mode": "plain"
+  }'`;
+  };
+
+  const copyCurlSnippet = () => {
+    navigator.clipboard.writeText(getCurlSnippet());
+    setCopiedCurl(true);
+    setTimeout(() => setCopiedCurl(false), 2000);
   };
 
   const downloadSummaryFile = () => {
@@ -593,24 +620,300 @@ function JOULEFISH_SIMPLIFY(text) {
 
           {/* API Docs Tab */}
           {activeTab === "api-docs" && (
-            <div className="max-w-3xl space-y-6">
-              <h2 className="text-lg font-bold">Deploybase Endpoint Integration</h2>
-              <div className="p-4 rounded-xl border bg-slate-900 text-slate-100 font-mono text-xs overflow-x-auto">
-                <p className="text-slate-400">// Direct HTTPS Function Door (Synchronous with CORS support)</p>
-                <p className="mt-2 text-indigo-400">POST {SIMPLIFY_API_URL}</p>
-                <pre className="mt-2 text-emerald-400">
+            <div className="max-w-4xl space-y-6">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${isDarkMode ? "bg-indigo-500/10 text-indigo-400" : "bg-indigo-50 text-indigo-600"}`}>
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className={`text-xl font-bold tracking-tight ${isDarkMode ? "text-white" : "text-slate-900"}`}>
+                      API Reference
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Direct synchronous HTTPS endpoint with CORS support for seamless client and server integrations.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Synchronous Direct Door
+                  </span>
+                </div>
+              </div>
+
+              {/* Endpoint Overview Card */}
+              <div className={`p-4 md:p-5 rounded-2xl border transition-all ${
+                isDarkMode ? "bg-[#181B22] border-slate-800" : "bg-white border-slate-200/80 shadow-sm"
+              }`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className="px-2.5 py-1 rounded-md text-xs font-bold font-mono bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      POST
+                    </span>
+                    <span className={`font-mono text-xs md:text-sm font-semibold break-all ${
+                      isDarkMode ? "text-indigo-300" : "text-indigo-600"
+                    }`}>
+                      {SIMPLIFY_API_URL}
+                    </span>
+                  </div>
+                  <button
+                    onClick={copyEndpoint}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition-all self-start sm:self-auto cursor-pointer shrink-0 ${
+                      isDarkMode 
+                        ? "bg-[#21232B] border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800" 
+                        : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    {copiedEndpoint ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedEndpoint ? "Copied" : "Copy URL"}</span>
+                  </button>
+                </div>
+                <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center gap-2 md:gap-3 text-[11px] text-slate-500 dark:text-slate-400">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                    Headers: <code className="font-mono text-slate-700 dark:text-slate-300">Content-Type: application/json</code>
+                  </span>
+                  <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                    Format: <code className="font-mono text-slate-700 dark:text-slate-300">JSON Payload &amp; Response</code>
+                  </span>
+                  <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    CORS: <span className="text-slate-700 dark:text-slate-300 font-medium">Preflight OPTIONS 204 supported</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Request Parameters (Variables) */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-indigo-500" />
+                  <h3 className={`text-sm font-bold uppercase tracking-wider ${
+                    isDarkMode ? "text-slate-300" : "text-slate-700"
+                  }`}>
+                    Request Body Parameters
+                  </h3>
+                </div>
+
+                <div className={`rounded-2xl border overflow-hidden ${
+                  isDarkMode ? "bg-[#181B22] border-slate-800" : "bg-white border-slate-200/80 shadow-sm"
+                }`}>
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                    {/* Parameter: text */}
+                    <div className="p-4 md:p-5 flex flex-col md:flex-row md:items-start justify-between gap-3">
+                      <div className="space-y-1 md:w-1/3">
+                        <div className="flex items-center gap-2">
+                          <code className="text-sm font-bold font-mono text-indigo-600 dark:text-indigo-400">text</code>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                            Required
+                          </span>
+                          <span className="text-[11px] font-mono text-slate-400">string</span>
+                        </div>
+                      </div>
+                      <div className="md:w-2/3">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                          The original text to simplify (such as a municipal motion, council resolution, legal regulation, policy amendment, or speech).
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Parameter: mode */}
+                    <div className="p-4 md:p-5 flex flex-col md:flex-row md:items-start justify-between gap-3">
+                      <div className="space-y-1 md:w-1/3">
+                        <div className="flex items-center gap-2">
+                          <code className="text-sm font-bold font-mono text-indigo-600 dark:text-indigo-400">mode</code>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-500/10 text-slate-500 dark:text-slate-400 border border-slate-500/20">
+                            Optional
+                          </span>
+                          <span className="text-[11px] font-mono text-slate-400">string</span>
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          Default: <code className="font-mono text-indigo-500 font-medium">"plain"</code>
+                        </div>
+                      </div>
+                      <div className="md:w-2/3 space-y-2">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                          Specifies the accessibility target level and formatting structure:
+                        </p>
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-mono">
+                            "plain"
+                          </span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400 py-1">or</span>
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-mono">
+                            "easy"
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Parameter: model */}
+                    <div className="p-4 md:p-5 flex flex-col md:flex-row md:items-start justify-between gap-3">
+                      <div className="space-y-1 md:w-1/3">
+                        <div className="flex items-center gap-2">
+                          <code className="text-sm font-bold font-mono text-indigo-600 dark:text-indigo-400">model</code>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-500/10 text-slate-500 dark:text-slate-400 border border-slate-500/20">
+                            Optional
+                          </span>
+                          <span className="text-[11px] font-mono text-slate-400">string</span>
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          Default: <code className="font-mono text-indigo-500 font-medium">"gemma-4-26b-a4b-it"</code>
+                        </div>
+                      </div>
+                      <div className="md:w-2/3">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                          Underlying AI model deployed on Deploybase for the simplification inference.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mode Comparison: Plain vs Easy */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-indigo-500" />
+                  <h3 className={`text-sm font-bold uppercase tracking-wider ${
+                    isDarkMode ? "text-slate-300" : "text-slate-700"
+                  }`}>
+                    Mode Comparison &amp; Linguistic Standards
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Mode: Plain Card */}
+                  <div className={`p-4 md:p-5 rounded-2xl border transition-all ${
+                    isDarkMode ? "bg-[#181B22] border-slate-800" : "bg-white border-slate-200/80 shadow-sm"
+                  }`}>
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                          mode: "plain"
+                        </span>
+                        <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                          Einfache Sprache
+                        </h4>
+                      </div>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        CEFR B1
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mb-3 leading-relaxed">
+                      Follows <strong className="text-indigo-600 dark:text-indigo-400">DIN ISO 24495-1 &amp; DIN 8581-1</strong> (Plain Language / Duidelijke Taal). Designed for the general public, councils, and news reporting.
+                    </p>
+
+                    <div className={`p-3 rounded-xl text-[11px] leading-relaxed space-y-1.5 ${
+                      isDarkMode ? "bg-[#101216] text-slate-400" : "bg-slate-50 text-slate-600"
+                    }`}>
+                      <div className="flex items-start gap-1.5">
+                        <span className="text-emerald-500 font-bold">•</span>
+                        <span><strong>Formatting:</strong> Standard paragraphs with clear thematic subheadings and bulleted lists.</span>
+                      </div>
+                      <div className="flex items-start gap-1.5">
+                        <span className="text-emerald-500 font-bold">•</span>
+                        <span><strong>Tone:</strong> Natural, modern, objective, and professional yet immediately understandable without legal jargon.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mode: Easy Card */}
+                  <div className={`p-4 md:p-5 rounded-2xl border transition-all ${
+                    isDarkMode ? "bg-[#181B22] border-slate-800" : "bg-white border-slate-200/80 shadow-sm"
+                  }`}>
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                          mode: "easy"
+                        </span>
+                        <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                          Leichte Sprache
+                        </h4>
+                      </div>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        CEFR A1 / A2
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mb-3 leading-relaxed">
+                      Strictly follows <strong className="text-purple-600 dark:text-purple-400">DIN SPEC 33429:2025-03</strong> and Easy Read civil accessibility standards for readers with cognitive or learning accessibility requirements.
+                    </p>
+
+                    <div className={`p-3 rounded-xl text-[11px] leading-relaxed space-y-1.5 ${
+                      isDarkMode ? "bg-[#101216] text-slate-400" : "bg-slate-50 text-slate-600"
+                    }`}>
+                      <div className="flex items-start gap-1.5">
+                        <span className="text-purple-500 font-bold">•</span>
+                        <span><strong>Formatting:</strong> Exactly <strong>ONE short sentence per line</strong> (max 8–12 words).</span>
+                      </div>
+                      <div className="flex items-start gap-1.5">
+                        <span className="text-purple-500 font-bold">•</span>
+                        <span><strong>Grammar:</strong> Strictly NO genitive, NO passive voice, NO subjunctive. Simple declarative statements.</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Code Examples: cURL Request & JSON Response */}
+              <div className="space-y-4">
+                {/* cURL Request */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1.5">
+                      <Terminal className="w-3.5 h-3.5 text-indigo-500" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                        Example Request (cURL)
+                      </h4>
+                    </div>
+                    <button
+                      onClick={copyCurlSnippet}
+                      className={`px-2.5 py-1 rounded-md text-xs border flex items-center gap-1 transition-all cursor-pointer ${
+                        isDarkMode
+                          ? "bg-[#21232B] border-slate-700 text-slate-300 hover:text-white"
+                          : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm"
+                      }`}
+                    >
+                      {copiedCurl ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedCurl ? "Copied" : "Copy cURL"}</span>
+                    </button>
+                  </div>
+                  <pre className="p-4 rounded-xl border bg-slate-950 border-slate-800 text-slate-100 font-mono text-xs overflow-x-auto leading-relaxed">
+                    <span className="text-emerald-400">curl</span> -X POST <span className="text-indigo-300">"{SIMPLIFY_API_URL}"</span> \{"\n"}
+                    {"  "}-H <span className="text-amber-300">"Content-Type: application/json"</span> \{"\n"}
+                    {"  "}-d <span className="text-cyan-300">{`'{
+    "text": "Der Stadtrat beschließt die Bereitstellung finanzieller Mittel für die Instandsetzung der Fußgängerzone im Haushalt 2026.",
+    "mode": "plain"
+  }'`}</span>
+                  </pre>
+                </div>
+
+                {/* JSON Response */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Code2 className="w-3.5 h-3.5 text-emerald-500" />
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                      Example Response (<code className="font-mono text-emerald-500 font-semibold">200 OK</code>)
+                    </h4>
+                  </div>
+                  <pre className="p-4 rounded-xl border bg-slate-950 border-slate-800 text-slate-100 font-mono text-xs overflow-x-auto leading-relaxed">
 {JSON.stringify({
-  text: "Münster, 03.02.2026\nRatsantrag...",
-  mode: "plain"
+  originalText: "Der Stadtrat beschließt die Bereitstellung finanzieller Mittel...",
+  simplifiedText: "Der Stadtrat hat entschieden: Im Jahr 2026 gibt es Geld für die Fußgängerzone. Mit diesem Geld soll die Fußgängerzone repariert werden.",
+  language: "German",
+  styleApplied: "Einfache Sprache (DIN 8581-1 / DIN ISO 24495-1)",
+  modeUsed: "plain",
+  modelUsed: "gemma-4-26b-a4b-it"
 }, null, 2)}
-                </pre>
-                <p className="mt-4 text-slate-400">// Direct Response (HTTP 200)</p>
-                <pre className="mt-2 text-indigo-200">
-{JSON.stringify({
-  simplifiedText: "Der Rat beschließt die Maßnahme in einfacher Sprache...",
-  language: "de"
-}, null, 2)}
-                </pre>
+                  </pre>
+                </div>
               </div>
             </div>
           )}
