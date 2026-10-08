@@ -117,6 +117,88 @@ RULES FOR EINFACHE SPRACHE / PLAIN LANGUAGE:
 5. OUTPUT strictly valid JSON with keys: "language", "styleApplied", and "simplifiedText".`;
 };
 
+// Rate limiting configuration: 10 requests in a minute results in a 3600 seconds ban
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 10;     // 10 requests in a minute
+const BAN_DURATION_SECONDS = 3600;      // 3600 seconds ban
+const BAN_DURATION_MS = BAN_DURATION_SECONDS * 1000;
+
+// In-memory rate limiting state
+const bannedClients = new Map(); // clientIp -> banExpiresAt (timestamp)
+const requestHistory = new Map(); // clientIp -> Array<timestamp>
+
+function getClientIp(request) {
+  const xForwardedFor = request.headers.get("x-forwarded-for");
+  if (xForwardedFor) {
+    const ip = xForwardedFor.split(",")[0].trim();
+    if (ip) return ip;
+  }
+
+  const cfConnectingIp = request.headers.get("cf-connecting-ip");
+  if (cfConnectingIp) return cfConnectingIp.trim();
+
+  const xRealIp = request.headers.get("x-real-ip");
+  if (xRealIp) return xRealIp.trim();
+
+  const clientIp = request.headers.get("client-ip") || request.headers.get("x-client-ip");
+  if (clientIp) return clientIp.trim();
+
+  const fastlyIp = request.headers.get("fastly-client-ip") || request.headers.get("true-client-ip");
+  if (fastlyIp) return fastlyIp.trim();
+
+  if (request.ip) return String(request.ip);
+
+  return "unknown";
+}
+
+function checkRateLimit(clientIp) {
+  const now = Date.now();
+
+  // 1. Check if client is currently banned
+  const banExpiresAt = bannedClients.get(clientIp);
+  if (banExpiresAt) {
+    if (now < banExpiresAt) {
+      const remainingSeconds = Math.max(1, Math.ceil((banExpiresAt - now) / 1000));
+      return {
+        isBanned: true,
+        remainingSeconds,
+      };
+    }
+    // Ban has expired
+    bannedClients.delete(clientIp);
+  }
+
+  // 2. Track requests in the sliding 1-minute window
+  let timestamps = requestHistory.get(clientIp) || [];
+  timestamps = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+
+  // If this request reaches or exceeds 10 requests in the 1-minute window -> ban for 3600s
+  if (timestamps.length + 1 >= MAX_REQUESTS_PER_WINDOW) {
+    const banUntil = now + BAN_DURATION_MS;
+    bannedClients.set(clientIp, banUntil);
+    requestHistory.delete(clientIp);
+    return {
+      isBanned: true,
+      remainingSeconds: BAN_DURATION_SECONDS,
+    };
+  }
+
+  // Record this request
+  timestamps.push(now);
+  requestHistory.set(clientIp, timestamps);
+
+  // Periodic cleanup if store grows
+  if (requestHistory.size > 10000) {
+    for (const [ip, list] of requestHistory.entries()) {
+      const active = list.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+      if (active.length === 0) requestHistory.delete(ip);
+      else requestHistory.set(ip, active);
+    }
+  }
+
+  return { isBanned: false };
+}
+
 export default async function handler(request) {
   const requestOrigin = request.headers.get("origin") || "https://joulefish.sites.deploybase.eu";
 
@@ -140,6 +222,26 @@ export default async function handler(request) {
       status: 204,
       headers: corsHeaders, // Clean 204 response without Content-Type
     });
+  }
+
+  // Enforce rate limiting: 10 requests in a minute results in a 3600 seconds ban
+  const clientIp = getClientIp(request);
+  const rateLimitStatus = checkRateLimit(clientIp);
+
+  if (rateLimitStatus.isBanned) {
+    return new Response(
+      JSON.stringify({
+        error: "Too Many Requests",
+        message: `Rate limit exceeded. You are banned for ${rateLimitStatus.remainingSeconds} seconds.`,
+      }),
+      {
+        status: 429,
+        headers: {
+          ...jsonHeaders,
+          "Retry-After": String(rateLimitStatus.remainingSeconds),
+        },
+      }
+    );
   }
 
   if (request.method !== "POST" && request.method !== "GET") {
