@@ -219,7 +219,7 @@ const ALLOWED_MODELS = new Set([
   "gemma-2-27b-it",
   "gemma-2-9b-it",
   "hyai/loes-qwen3-14b",
-  "loes-eurollm-22b",  
+  "hyai/loes-eurollm-22b",  
 ]);
 
 const ALLOWED_MODES = new Set(["plain", "easy", "A2 / Simple", "a2", "B1 / Plain"]);
