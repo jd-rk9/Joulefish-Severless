@@ -224,6 +224,7 @@ const ALLOWED_MODELS = new Set([
 
 const ALLOWED_MODES = new Set(["plain", "easy", "A2 / Simple", "a2", "B1 / Plain"]);
 
+/* we don't need to check corsheaders now
 function getCorsHeaders(request) {
   const origin = request.headers.get("origin");
   const isAllowed = origin && ALLOWED_ORIGINS.has(origin);
@@ -241,6 +242,19 @@ function getCorsHeaders(request) {
 
   return headers;
 }
+*/
+
+function getCorsHeaders(request) {
+  const origin = request.headers.get("origin") || "";
+  // Simple "allow-all" to prevent local dev issues; restrict in production
+  return {
+    "Access-Control-Allow-Origin": "*", // CHANGE TO "https://your-site.com" IN PRODUCTION
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Max-Age": "86400"
+  };
+}
+
 
 export default async function handler(request) {
   const corsHeaders = getCorsHeaders(request);
