@@ -54,9 +54,11 @@ const DEFAULT_EXAMPLES: ExampleItem[] = [
 ];
 
 const DEFAULT_MODELS = [
-  { id: "gemma-4-26b-a4b-it", name: "Gemma 4 26B (Default)" },
-  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
-  { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro" }
+  { id: "gemma-4-26b-a4b-it", name: "Gemma 4 26B (EU hosted)" },
+  { id: "hyai/loes-qwen3-14b", name: "Loes-Qwen 3 14B (EU hosted)" },
+  { id: "hyai/loes-eurollm-22b", name: "Loes-EuroLLM 22B (EU hosted)" },
+  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash (global)" },
+  { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro (global)" }
 ];
 
 export default function App() {
@@ -332,7 +334,7 @@ function JOULEFISH_SIMPLIFY(text) {
           }`}>
             <div className="flex flex-col gap-3">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
-                Selected LLM Engine
+                Selected LLM Engine (only EU hosted available for this demo)
               </label>
               <div className="relative">
                 <select

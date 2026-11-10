@@ -117,16 +117,147 @@ RULES FOR EINFACHE SPRACHE / PLAIN LANGUAGE:
 5. OUTPUT strictly valid JSON with keys: "language", "styleApplied", and "simplifiedText".`;
 };
 
-export default async function handler(request) {
-  const requestOrigin = request.headers.get("origin") || "https://joulefish.sites.deploybase.eu";
+// Rate limiting configuration: 10 requests in a minute results in a 3600 seconds ban
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 10;     // 10 requests in a minute
+const BAN_DURATION_SECONDS = 3600;      // 3600 seconds ban
+const BAN_DURATION_MS = BAN_DURATION_SECONDS * 1000;
 
-  // Pure CORS headers (no Content-Type here)
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": requestOrigin,
+// In-memory rate limiting state
+const bannedClients = new Map(); // clientIp -> banExpiresAt (timestamp)
+const requestHistory = new Map(); // clientIp -> Array<timestamp>
+
+function getClientIp(request) {
+  const xForwardedFor = request.headers.get("x-forwarded-for");
+  if (xForwardedFor) {
+    const ip = xForwardedFor.split(",")[0].trim();
+    if (ip) return ip;
+  }
+
+  const cfConnectingIp = request.headers.get("cf-connecting-ip");
+  if (cfConnectingIp) return cfConnectingIp.trim();
+
+  const xRealIp = request.headers.get("x-real-ip");
+  if (xRealIp) return xRealIp.trim();
+
+  const clientIp = request.headers.get("client-ip") || request.headers.get("x-client-ip");
+  if (clientIp) return clientIp.trim();
+
+  const fastlyIp = request.headers.get("fastly-client-ip") || request.headers.get("true-client-ip");
+  if (fastlyIp) return fastlyIp.trim();
+
+  if (request.ip) return String(request.ip);
+
+  return "unknown";
+}
+
+function checkRateLimit(clientIp) {
+  const now = Date.now();
+
+  // 1. Check if client is currently banned
+  const banExpiresAt = bannedClients.get(clientIp);
+  if (banExpiresAt) {
+    if (now < banExpiresAt) {
+      const remainingSeconds = Math.max(1, Math.ceil((banExpiresAt - now) / 1000));
+      return {
+        isBanned: true,
+        remainingSeconds,
+      };
+    }
+    // Ban has expired
+    bannedClients.delete(clientIp);
+  }
+
+  // 2. Track requests in the sliding 1-minute window
+  let timestamps = requestHistory.get(clientIp) || [];
+  timestamps = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+
+  // If this request reaches or exceeds 10 requests in the 1-minute window -> ban for 3600s
+  if (timestamps.length + 1 >= MAX_REQUESTS_PER_WINDOW) {
+    const banUntil = now + BAN_DURATION_MS;
+    bannedClients.set(clientIp, banUntil);
+    requestHistory.delete(clientIp);
+    return {
+      isBanned: true,
+      remainingSeconds: BAN_DURATION_SECONDS,
+    };
+  }
+
+  // Record this request
+  timestamps.push(now);
+  requestHistory.set(clientIp, timestamps);
+
+  // Periodic cleanup if store grows
+  if (requestHistory.size > 10000) {
+    for (const [ip, list] of requestHistory.entries()) {
+      const active = list.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+      if (active.length === 0) requestHistory.delete(ip);
+      else requestHistory.set(ip, active);
+    }
+  }
+
+  return { isBanned: false };
+}
+
+//* Allowed origins for CORS (prevent reflection of arbitrary origins)
+/*
+const ALLOWED_ORIGINS = new Set([
+  "https://joulefish.sites.deploybase.eu",
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:5173",
+]); */
+
+// Allowed model IDs to prevent unauthorized model enumeration and passthrough
+// Feel free to add more, will be a variable in the near future
+const ALLOWED_MODELS = new Set([
+  "gemma-4-26b-a4b-it",
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+  "gemini-1.5-pro",
+  "gemma-2-27b-it",
+  "gemma-2-9b-it",
+  "hyai/loes-qwen3-14b",
+  "hyai/loes-eurollm-22b",  
+]);
+
+const ALLOWED_MODES = new Set(["plain", "easy", "A2 / Simple", "a2", "B1 / Plain"]);
+
+/* we don't need to check corsheaders now
+function getCorsHeaders(request) {
+  const origin = request.headers.get("origin");
+  const isAllowed = origin && ALLOWED_ORIGINS.has(origin);
+  const allowOrigin = isAllowed ? origin : "https://joulefish.sites.deploybase.eu";
+
+  const headers = {
+    "Access-Control-Allow-Origin": allowOrigin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept, X-Requested-With",
-    "Access-Control-Allow-Credentials": "true",
   };
+
+  if (isAllowed) {
+    headers["Access-Control-Allow-Credentials"] = "true";
+  }
+
+  return headers;
+}
+*/
+
+function getCorsHeaders(request) {
+  const origin = request.headers.get("origin") || "";
+  // Simple "allow-all" to prevent local dev issues; restrict in production
+  return {
+    "Access-Control-Allow-Origin": "*", // CHANGE TO "https://your-site.com" IN PRODUCTION
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Max-Age": "86400"
+  };
+}
+
+
+export default async function handler(request) {
+  const corsHeaders = getCorsHeaders(request);
 
   // Pre-assembled headers for JSON responses
   const jsonHeaders = {
@@ -142,6 +273,26 @@ export default async function handler(request) {
     });
   }
 
+  // Enforce rate limiting: 10 requests in a minute results in a 3600 seconds ban
+  const clientIp = getClientIp(request);
+  const rateLimitStatus = checkRateLimit(clientIp);
+
+  if (rateLimitStatus.isBanned) {
+    return new Response(
+      JSON.stringify({
+        error: "Too Many Requests",
+        message: `Rate limit exceeded. You are banned for ${rateLimitStatus.remainingSeconds} seconds.`,
+      }),
+      {
+        status: 429,
+        headers: {
+          ...jsonHeaders,
+          "Retry-After": String(rateLimitStatus.remainingSeconds),
+        },
+      }
+    );
+  }
+
   if (request.method !== "POST" && request.method !== "GET") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
@@ -150,34 +301,68 @@ export default async function handler(request) {
   }
 
   if (request.method === "GET") {
-  // Logic to fetch invocation/job status by ID from your database or queue
-  return new Response(JSON.stringify({
-    data: {
-      status: "completed", // or "pending"
-      response_body: "..." // base64 encoded result
-    }
-  }), {
-    status: 200,
-    headers: jsonHeaders,
-  });
-}
+    return new Response(JSON.stringify({
+      data: {
+        status: "completed",
+        response_body: "..."
+      }
+    }), {
+      status: 200,
+      headers: jsonHeaders,
+    });
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "Invalid JSON", message: "Malformed JSON payload in request body." }),
+      { status: 400, headers: jsonHeaders }
+    );
+  }
 
   try {
-    const body = await request.json();
     const { text, model, mode } = body;
 
-    if (!text || typeof text !== "string" || text.trim() === "") {
+    // Strict input type validation
+    if (typeof text !== "string" || text.trim() === "") {
       return new Response(
-        JSON.stringify({ error: "Invalid input", message: "Text cannot be empty." }),
+        JSON.stringify({ error: "Invalid input", message: "Text must be a non-empty string." }),
         { status: 400, headers: jsonHeaders }
       );
     }
+
+    // Strict mode validation
+    if (mode !== undefined && mode !== null && !ALLOWED_MODES.has(mode)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid mode", message: "Mode must be 'plain' or 'easy'." }),
+        { status: 400, headers: jsonHeaders }
+      );
+    }
+
+    // Model allowlisting
+    const defaultModel = process.env.LLM_MODEL_NAME_OVERRIDE || "gemma-4-26b-a4b-it";
+    if (defaultModel) ALLOWED_MODELS.add(defaultModel);
+
+    if (model !== undefined && model !== null) {
+      if (typeof model !== "string" || !ALLOWED_MODELS.has(model)) {
+        return new Response(
+          JSON.stringify({
+            error: "Invalid model",
+            message: `Model '${model}' is not supported or not allowed.`
+          }),
+          { status: 400, headers: jsonHeaders }
+        );
+      }
+    }
+
+    const selectedModel = model || defaultModel;
 
     // Process environment variables safely
     const apiProvider = (process.env.LLM_API_PROVIDER ?? "gemini").toString().toLowerCase();
     const customUrl = process.env.LLM_API_URL;
     const apiKey = process.env.LLM_API_KEY || process.env.GEMINI_API_KEY;
-    const selectedModel = model || process.env.LLM_MODEL_NAME_OVERRIDE || "gemini-2.5-flash";
 
     const isEasyMode = mode === "easy" || mode === "A2 / Simple" || mode === "a2";
     const systemPrompt = buildSystemPrompt(mode);
@@ -187,6 +372,8 @@ export default async function handler(request) {
       : (isEasyMode ? "Easy Read (CEFR A2)" : "Plain Language (CEFR B1)");
 
     const augmentedText = `[STRICT REQUIREMENT: Input text language is ${detectedLang}. Output MUST be strictly in ${detectedLang}. DO NOT TRANSLATE. Apply ${targetStandard}.]\n\nInput text:\n${text}`;
+
+    let simplifiedResultText = "";
 
     // Path 1: Custom OpenAI-compatible endpoint
     if (apiProvider === "openai" || customUrl) {
@@ -214,8 +401,11 @@ export default async function handler(request) {
       });
 
       if (!fetchResponse.ok) {
-        const errText = await fetchResponse.text();
-        throw new Error(`Custom API returned status ${fetchResponse.status}: ${errText}`);
+        console.error(`Upstream API status: ${fetchResponse.status}`);
+        return new Response(
+          JSON.stringify({ error: "Upstream error", message: "Error communicating with AI service provider." }),
+          { status: 502, headers: jsonHeaders }
+        );
       }
 
       const json = await fetchResponse.json();
@@ -238,95 +428,107 @@ export default async function handler(request) {
         parsed = { simplifiedText: cleaned };
       }
 
-      return new Response(
-        JSON.stringify({
-          originalText: text,
-          simplifiedText: parsed.simplifiedText || cleaned,
-          language: parsed.language || detectedLang,
-          styleApplied: parsed.styleApplied || targetStandard,
-          modelUsed: selectedModel,
-          modeUsed: isEasyMode ? "easy" : "plain"
-        }),
-        { status: 200, headers: jsonHeaders }
-      );
-    }
-
-    // Path 2: Direct Gemini REST API
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: "API Key Missing", message: "No LLM_API_KEY or GEMINI_API_KEY provided." }),
-        { status: 503, headers: jsonHeaders }
-      );
-    }
-
-    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
-
-    const geminiPayload = {
-      system_instruction: {
-        parts: [{ text: systemPrompt }]
-      },
-      contents: [
-        {
-          parts: [{ text: augmentedText }]
-        }
-      ],
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            language: { type: "STRING" },
-            styleApplied: { type: "STRING" },
-            simplifiedText: { type: "STRING" }
-          },
-          required: ["language", "styleApplied", "simplifiedText"]
-        }
+      if (Array.isArray(parsed.simplifiedText)) {
+        simplifiedResultText = parsed.simplifiedText.filter(Boolean).join("\n\n");
+      } else if (typeof parsed.simplifiedText === "string") {
+        simplifiedResultText = parsed.simplifiedText;
+      } else {
+        simplifiedResultText = cleaned;
       }
-    };
+    } else {
+      // Path 2: Direct Gemini REST API
+      if (!apiKey) {
+        return new Response(
+          JSON.stringify({ error: "API Key Missing", message: "No LLM_API_KEY or GEMINI_API_KEY provided." }),
+          { status: 503, headers: jsonHeaders }
+        );
+      }
 
-    const fetchResponse = await fetch(geminiEndpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(geminiPayload)
-    });
+      const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
 
-    if (!fetchResponse.ok) {
-      const errText = await fetchResponse.text();
-      throw new Error(`Gemini API returned status ${fetchResponse.status}: ${errText}`);
+      const geminiPayload = {
+        system_instruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents: [
+          {
+            parts: [{ text: augmentedText }]
+          }
+        ],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              language: { type: "STRING" },
+              styleApplied: { type: "STRING" },
+              simplifiedText: { type: "STRING" }
+            },
+            required: ["language", "styleApplied", "simplifiedText"]
+          }
+        }
+      };
+
+      const fetchResponse = await fetch(geminiEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(geminiPayload)
+      });
+
+      if (!fetchResponse.ok) {
+        console.error(`Gemini API status: ${fetchResponse.status}`);
+        return new Response(
+          JSON.stringify({ error: "Upstream error", message: "Error communicating with AI service provider." }),
+          { status: 502, headers: jsonHeaders }
+        );
+      }
+
+      const geminiJson = await fetchResponse.json();
+      const rawText = geminiJson.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      let cleaned = rawText.trim();
+
+      if (cleaned.startsWith("```json")) {
+        cleaned = cleaned.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+      } else if (cleaned.startsWith("```")) {
+        cleaned = cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
+      }
+
+      let parsed = {};
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        parsed = { simplifiedText: cleaned };
+      }
+
+      if (Array.isArray(parsed.simplifiedText)) {
+        simplifiedResultText = parsed.simplifiedText.filter(Boolean).join("\n\n");
+      } else if (typeof parsed.simplifiedText === "string") {
+        simplifiedResultText = parsed.simplifiedText;
+      } else {
+        simplifiedResultText = cleaned;
+      }
     }
 
-    const geminiJson = await fetchResponse.json();
-    const rawText = geminiJson.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    let cleaned = rawText.trim();
+    // Material shrinkage check (Finding 4): detect if output was severely truncated
+    const isTruncated = text.length > 500 && simplifiedResultText.length < text.length * 0.15;
 
-    if (cleaned.startsWith("```json")) {
-      cleaned = cleaned.replace(/^```json\s*/, "").replace(/\s*```$/, "");
-    } else if (cleaned.startsWith("```")) {
-      cleaned = cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
-    }
-
-    let parsed = {};
-    try {
-      parsed = JSON.parse(cleaned);
-    } catch {
-      parsed = { simplifiedText: cleaned };
-    }
-
+    // Server-enforced metadata: language and styleApplied are derived server-side (Finding 1 & F7)
     return new Response(
       JSON.stringify({
         originalText: text,
-        simplifiedText: parsed.simplifiedText || cleaned,
-        language: parsed.language || detectedLang,
-        styleApplied: parsed.styleApplied || targetStandard,
+        simplifiedText: simplifiedResultText,
+        language: detectedLang,           // Server-derived
+        styleApplied: targetStandard,     // Server-derived
         modelUsed: selectedModel,
-        modeUsed: isEasyMode ? "easy" : "plain"
+        modeUsed: isEasyMode ? "easy" : "plain",
+        truncated: isTruncated
       }),
       { status: 200, headers: jsonHeaders }
     );
 
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: "Simplification failed", message: error?.message || "An unknown error occurred." }),
+      JSON.stringify({ error: "Simplification failed", message: "An unexpected error occurred during simplification." }),
       { status: 500, headers: jsonHeaders }
     );
   }

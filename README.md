@@ -10,7 +10,41 @@ As you might have guessed, Joulefish is a blend of the legendary Babel Fish (the
 
 ## What is Joulefish?
 
-Joulefish is a tool that takes complex political texts and simplifies them into easy-to-understand language. It is designed to be used by anyone who wants to understand political texts better, whether they are a politician, a journalist, or a member of the public. It is also designed to be used by organizations that want to make their political texts more accessible to the public.
+Joulefish is a tool that takes complex political texts and simplifies them into easy-to-understand language. It is an API first microservices or serverless application that can be deployed anywhere.
+
+However it is to be used by anyone who wants to understand political texts better, whether they are a politician, a journalist, or a member of the public. It is also can help organizations to make their political texts more accessible to the public.
+
+## Runing Joulefish:
+
+An important note is **Not every model renders successful simplifications** the standard is Gemma-4-26B, A list of models which provide good outputs:
+
+- Gemma-4-26B
+- Gemini-3.X
+- Gemini-2.5 flash
+- Loes-Qwen3-14B
+- Loes-EuroLLM-22B
+
+### Serverless (from the serverless branch)
+
+Use the serverless-prd branch, this is the production version.
+You will have to deploy simplify.js as a function.
+On deploybase.eu you can just simply run this branch as a deployment with the proper configuration in your .env this does require you to get your own API keys from a provider.
+
+### You can get a free one from
+
+- Google via [https://aistudio.google.com/api-keys](https://aistudio.google.com/api-keys)
+- DeepSeek via [https://deepseek.com/api-key](https://deepseek.com/api-key)
+- Mistral via [https://mistral.ai/api-keys](https://mistral.ai/api-keys)
+
+European providers: (paid)
+
+- hostyourai.com (Netherlands)
+- supabase.com (with edge functions)
+
+### With docker or kubernetes (from main)
+
+Fill out the docker-compose correctly with your own API keys and run the container.
+Or deploy with Kubernetes. Check the Dockerfile and docker-compose.yml for more information.
 
 ---
 
@@ -130,6 +164,3 @@ npm start
 ```
 
 ## Known issues
-
-- Hard to setup with cloud LLM's
-- Properly tested with local LLM's through LM Studio not Olama
